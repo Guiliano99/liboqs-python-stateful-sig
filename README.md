@@ -26,6 +26,7 @@ The project contains the following files and directories
 - `examples/kem.py`: key encapsulation example
 - `examples/rand.py`: RNG example
 - `examples/sig.py`: signature example
+- `examples/stfl_sig.py`: stateful signature example
 - `tests`: unit tests
 
 ---
@@ -141,6 +142,7 @@ Execute
 ```shell
 python3 liboqs-python/examples/kem.py
 python3 liboqs-python/examples/sig.py
+python3 liboqs-python/examples/stfl_sig.py
 python3 liboqs-python/examples/rand.py
 ```
 
