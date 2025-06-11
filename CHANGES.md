@@ -6,6 +6,8 @@
     containing the (major, minor, patch) versions
 - A warning is issued only if the liboqs-python version's major and minor
   numbers differ from those of liboqs, ignoring the patch version
+- Updated stateful signature build flag to `-DOQS_ENABLE_SIG_STFL_KEYGEN=ON`
+  to support liboqs 0.13.1-dev
 
 # Version 0.12.0 - January 15, 2025
 

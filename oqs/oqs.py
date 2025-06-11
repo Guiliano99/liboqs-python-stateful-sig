@@ -158,10 +158,9 @@ def _install_liboqs(
                 "-DOQS_ENABLE_SIG_STFL_LMS=ON",  # LMS family
                 "-DOQS_ENABLE_SIG_STFL_XMSS=ON",  # XMSS family
                 "-DOQS_ENABLE_SIG_STFL_XMSSMT=ON",
-                # XMSS-MT family:
-                # Flag removed in the 0.13.1-dev release, but kept for compatibility.
-                # To support key-generation.
-                "-DOQS_HAZARDOUS_EXPERIMENTAL_ENABLE_SIG_STFL_KEY_SIG_GEN=ON",
+                # XMSS-MT family. Key-generation support flag renamed in
+                # liboqs 0.13.1-dev.
+                "-DOQS_ENABLE_SIG_STFL_KEYGEN=ON",
                 f"-DCMAKE_INSTALL_PREFIX={target_directory}",
             ],
         )
