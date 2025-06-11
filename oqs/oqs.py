@@ -143,6 +143,10 @@ def _install_liboqs(
                 "liboqs/build",
                 "-DBUILD_SHARED_LIBS=ON",
                 "-DOQS_BUILD_ONLY_LIB=ON",
+                "-DOQS_HAZARDOUS_EXPERIMENTAL_ENABLE_SIG_STFL_KEY_SIG_GEN=ON",
+                "-DOQS_ENABLE_SIG_STFL_XMSS=ON",
+                "-DOQS_ENABLE_SIG_STFL_LMS=ON",
+                "-DOQS_ENABLE_SIG_STFL_KEYGEN=ON",
                 f"-DCMAKE_INSTALL_PREFIX={target_directory}",
             ],
         )
@@ -963,8 +967,7 @@ class StatefulSignature(ct.Structure):
             raise RuntimeError(msg)
         self._attach_store_cb()
 
-        sig_struct = self._sig.contents
-        pk_buf = ct.create_string_buffer(sig_struct.length_public_key)
+        pk_buf = ct.create_string_buffer(self.length_public_key)
 
         rc = native().OQS_SIG_STFL_keypair(self._sig, pk_buf, self._secret_key)
         if rc != OQS_SUCCESS:
