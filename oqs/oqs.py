@@ -120,38 +120,72 @@ def _install_liboqs(
 ) -> None:
     """Install liboqs version oqs_version (if None, installs latest at HEAD) in the target_directory."""  # noqa: E501
     with tempfile.TemporaryDirectory() as tmpdirname:
-        oqs_install_cmd = [
-            "cd",
-            tmpdirname,
-            "&&",
-            "git",
-            "clone",
-            "https://github.com/open-quantum-safe/liboqs",
-        ]
-        if oqs_version_to_install:
-            oqs_install_cmd.extend(["--branch", oqs_version_to_install])
+        # Base: cd into the temporary work directory
+        oqs_install_cmd: list[str] = ["cd", tmpdirname, "&&"]
 
-        oqs_install_cmd.extend(
-            [
-                "--depth",
-                "1",
-                "&&",
-                "cmake",
-                "-S",
-                "liboqs",
-                "-B",
-                "liboqs/build",
-                "-DBUILD_SHARED_LIBS=ON",
-                "-DOQS_BUILD_ONLY_LIB=ON",
-                f"-DCMAKE_INSTALL_PREFIX={target_directory}",
-            ],
-        )
+        if oqs_version_to_install:
+            # Precise, reproducible clone for the requested version
+            oqs_install_cmd.extend(
+                [
+                    "git",
+                    "clone",
+                    "--branch",
+                    oqs_version_to_install,
+                    "--depth",
+                    "1",
+                    "--no-tags",
+                    "https://github.com/open-quantum-safe/liboqs.git",
+                    "&&",
+                    "git",
+                    "-C",
+                    "liboqs",
+                    "fetch",
+                    "--tags",
+                    "&&",
+                    "git",
+                    "-C",
+                    "liboqs",
+                    "checkout",
+                    f"tags/{oqs_version_to_install}",
+                    "&&",
+                    "git",
+                    "-C",
+                    "liboqs",
+                    "reset",
+                    "--hard",
+                ]
+            )
+        else:
+            # Shallow clone of latest HEAD
+            oqs_install_cmd.extend(
+                [
+                    "git",
+                    "clone",
+                    "--depth",
+                    "1",
+                    "https://github.com/open-quantum-safe/liboqs.git",
+                ]
+            )
+
+        # CMake configuration (unchanged, but moved out to avoid duplication)
+        cmake_cfg = [
+            "&&",
+            "cmake",
+            "-S",
+            "liboqs",
+            "-B",
+            "liboqs/build",
+            "-DBUILD_SHARED_LIBS=ON",
+            "-DOQS_BUILD_ONLY_LIB=ON",
+            f"-DCMAKE_INSTALL_PREFIX={target_directory}",
+        ]
 
         if platform.system() == "Windows":
-            oqs_install_cmd.append("-DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE")
+            cmake_cfg.append("-DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE")
 
         oqs_install_cmd.extend(
-            [
+            cmake_cfg
+            + [
                 "&&",
                 "cmake",
                 "--build",
