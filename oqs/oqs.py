@@ -337,6 +337,7 @@ class KeyEncapsulation(ct.Structure):
             "length_secret_key": int(self.length_secret_key),
             "length_ciphertext": int(self.length_ciphertext),
             "length_shared_secret": int(self.length_shared_secret),
+            "length_keypair_seed": int(self.length_keypair_seed),
         }
 
         if secret_key:
