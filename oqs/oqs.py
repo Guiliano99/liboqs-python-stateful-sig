@@ -76,8 +76,8 @@ def version(version_str: str) -> tuple[str, str, str]:
 
 
 def _load_shared_obj(
-        name: str,
-        additional_searching_paths: Union[Sequence[Path], None] = None,
+    name: str,
+    additional_searching_paths: Union[Sequence[Path], None] = None,
 ) -> ct.CDLL:
     """Attempt to load shared library."""
     paths: list[Path] = []
@@ -375,6 +375,7 @@ class KeyEncapsulation(ct.Structure):
             "length_secret_key": int(self.length_secret_key),
             "length_ciphertext": int(self.length_ciphertext),
             "length_shared_secret": int(self.length_shared_secret),
+            "length_keypair_seed": int(self.length_keypair_seed),
         }
 
         if secret_key:
@@ -387,10 +388,10 @@ class KeyEncapsulation(ct.Structure):
         return self
 
     def __exit__(
-            self,
-            exc_type: Union[type[BaseException], None],
-            exc_value: Union[BaseException, None],
-            traceback: Union[TracebackType, None],
+        self,
+        exc_type: Union[type[BaseException], None],
+        exc_value: Union[BaseException, None],
+        traceback: Union[TracebackType, None],
     ) -> None:
         self.free()
 
@@ -622,10 +623,10 @@ class Signature(ct.Structure):
         return self
 
     def __exit__(
-            self,
-            exc_type: Union[type[BaseException], None],
-            exc_value: Union[BaseException, None],
-            traceback: Union[TracebackType, None],
+        self,
+        exc_type: Union[type[BaseException], None],
+        exc_value: Union[BaseException, None],
+        traceback: Union[TracebackType, None],
     ) -> None:
         self.free()
 
@@ -748,11 +749,11 @@ class Signature(ct.Structure):
         raise RuntimeError(msg)
 
     def verify_with_ctx_str(
-            self,
-            message: bytes,
-            signature: bytes,
-            context: bytes,
-            public_key: bytes,
+        self,
+        message: bytes,
+        signature: bytes,
+        context: bytes,
+        public_key: bytes,
     ) -> bool:
         """
         Verify the provided signature on the message with context string; returns True if valid.
