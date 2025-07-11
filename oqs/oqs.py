@@ -564,7 +564,7 @@ class Signature(ct.Structure):
         ("claimed_nist_level", ct.c_ubyte),
         ("euf_cma", ct.c_bool),
         ("suf_cma", ct.c_bool),
-        ("sig_with_ctx_support", ct.c_ubyte),
+        ("sig_with_ctx_support", ct.c_bool),
         ("length_public_key",  ct.c_size_t),
         ("length_secret_key",  ct.c_size_t),
         ("length_signature",   ct.c_size_t),
