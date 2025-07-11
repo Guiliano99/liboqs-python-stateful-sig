@@ -596,7 +596,7 @@ class Signature(ct.Structure):
         self.alg_version = self._sig.contents.alg_version
         self.claimed_nist_level = self._sig.contents.claimed_nist_level
         self.euf_cma = self._sig.contents.euf_cma
-        self.sig_with_ctx_support = self._sig.contents.sig_with_ctx_support
+        self.sig_with_ctx_support = bool(self._sig.contents.sig_with_ctx_support)
         self.length_public_key = self._sig.contents.length_public_key
         self.length_secret_key = self._sig.contents.length_secret_key
         self.length_signature = self._sig.contents.length_signature

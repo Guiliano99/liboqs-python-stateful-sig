@@ -144,6 +144,9 @@ def test_python_attributes() -> None:
             if sig.length_signature == 0:
                 msg = "Incorrect oqs.Signature.length_signature"
                 raise AssertionError(msg)
+            if not isinstance(sig.sig_with_ctx_support, bool):
+                msg = "oqs.Signature.sig_with_ctx_support is not a boolean"
+                raise AssertionError(msg)
 
 
 if __name__ == "__main__":
