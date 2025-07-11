@@ -811,15 +811,21 @@ class Signature(ct.Structure):
 
 native().OQS_SIG_new.restype = ct.POINTER(Signature)
 native().OQS_SIG_alg_identifier.restype = ct.c_char_p
-
+native().OQS_SIG_supports_ctx_str.restype = ct.c_bool
 
 def is_sig_enabled(alg_name: str) -> bool:
-    """
-    Return True if the signature algorithm is enabled.
+    """Return `True` if the signature algorithm is enabled.
 
-    :param alg_name: a signature mechanism algorithm name.
+    :param alg_name: A signature mechanism algorithm name.
     """
     return native().OQS_SIG_alg_is_enabled(ct.create_string_buffer(alg_name.encode()))
+
+def sig_supports_context(alg_name: str) -> bool:
+    """Return `True` if the signature algorithm supports signing with a context string.
+
+    :param alg_name: A signature mechanism algorithm name.
+    """
+    return bool(native().OQS_SIG_supports_ctx_str(ct.create_string_buffer(alg_name.encode())))
 
 
 _sig_alg_ids = [native().OQS_SIG_alg_identifier(i) for i in range(native().OQS_SIG_alg_count())]
