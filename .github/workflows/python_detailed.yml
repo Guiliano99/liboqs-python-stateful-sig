@@ -58,6 +58,8 @@ jobs:
           uv run examples/sig.py
           echo
           uv run examples/rand.py
+          echo
+          uv run examples/stfl_sig.py
 
       - name: Run unit tests POSIX
         if: matrix.os != 'windows-latest'
