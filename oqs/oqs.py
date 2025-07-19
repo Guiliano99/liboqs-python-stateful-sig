@@ -17,7 +17,10 @@ import platform  # to learn the OS we're on
 import subprocess
 import tempfile  # to install liboqs on demand
 import time
-import tomllib
+try:
+    import tomllib  # Python 3.11+
+except ImportError:  # Fallback for older versions
+    import tomli as tomllib
 import warnings
 from os import environ
 from pathlib import Path
