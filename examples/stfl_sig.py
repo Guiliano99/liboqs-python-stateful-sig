@@ -27,6 +27,7 @@ with StatefulSignature(stfl_sigalg) as signer, StatefulSignature(stfl_sigalg) as
 
     # Signer generates its keypair
     signer_public_key = signer.generate_keypair()
+    logger.info("Generated public key:\n%s", signer_public_key.hex())
     # Optionally, the secret key can be obtained by calling export_secret_key()
     # and the signer can later be re-instantiated with the key pair:
     # secret_key = signer.export_secret_key()
