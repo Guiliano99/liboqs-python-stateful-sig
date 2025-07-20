@@ -42,10 +42,11 @@ jobs:
       - name: Install liboqs POSIX
         if: matrix.os != 'windows-latest'
         run: |
-          git clone --branch 0.14.0-rc1 --single-branch --depth 1 https://github.com/open-quantum-safe/liboqs
+          git clone --branch 0.14.0 --single-branch --depth 1 https://github.com/open-quantum-safe/liboqs
           cmake -S liboqs -B liboqs/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_SHARED_LIBS=ON \
           -DOQS_BUILD_ONLY_LIB=ON -DOQS_BUILD_ONLY_LIB=ON -DOQS_ENABLE_SIG_STFL_LMS=ON \
-          -DOQS_ENABLE_SIG_STFL_XMSS=ON -DOQS_HAZARDOUS_EXPERIMENTAL_ENABLE_SIG_STFL_KEY_SIG_GEN=ON
+          -DOQS_ENABLE_SIG_STFL_XMSS=ON -DOQS_HAZARDOUS_EXPERIMENTAL_ENABLE_SIG_STFL_KEY_SIG_GEN=ON \
+          -DOQS_ALLOW_STFL_KEY_AND_SIG_GEN=ON
           cmake --build liboqs/build --parallel 4
           sudo cmake --build liboqs/build --target install
 
