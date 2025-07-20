@@ -265,7 +265,6 @@ def native() -> ct.CDLL:
 # liboqs initialization
 native().OQS_init()
 
-
 def oqs_version() -> str:
     """`liboqs` version string."""
     native().OQS_version.restype = ct.c_char_p
@@ -1148,3 +1147,25 @@ class StatefulSignature(ct.Structure):
 
 
 native().OQS_SIG_STFL_new.restype = ct.POINTER(StatefulSignature)
+native().OQS_SIG_STFL_SECRET_KEY_new.restype = ct.c_void_p
+native().OQS_SIG_STFL_SECRET_KEY_new.argtypes = [ct.c_char_p]
+native().OQS_SIG_STFL_SECRET_KEY_SET_store_cb.argtypes = [ct.c_void_p, ct.c_void_p, ct.c_void_p]
+native().OQS_SIG_STFL_keypair.argtypes = [ct.POINTER(StatefulSignature), ct.c_void_p, ct.c_void_p]
+native().OQS_SIG_STFL_sign.argtypes = [
+    ct.POINTER(StatefulSignature),
+    ct.c_void_p,
+    ct.POINTER(ct.c_size_t),
+    ct.c_void_p,
+    ct.c_size_t,
+    ct.c_void_p,
+]
+native().OQS_SIG_STFL_verify.argtypes = [
+    ct.POINTER(StatefulSignature),
+    ct.c_void_p,
+    ct.c_size_t,
+    ct.c_void_p,
+    ct.c_size_t,
+    ct.c_void_p,
+]
+native().OQS_SIG_STFL_sigs_remaining.argtypes = [ct.POINTER(StatefulSignature), ct.POINTER(ct.c_uint64), ct.c_void_p]
+native().OQS_SIG_STFL_sigs_total.argtypes = [ct.POINTER(StatefulSignature), ct.POINTER(ct.c_uint64), ct.c_void_p]
