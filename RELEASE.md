@@ -1,6 +1,14 @@
 # liboqs-python version 0.14.0
 
 ---
+# Added in version 0.14.0 July 2025
+
+- Added stateful signature support via the `StatefulSignature` class.
+- New enumeration helpers `get_enabled_stateful_sig_mechanisms()` and
+  `get_supported_stateful_sig_mechanisms()`.
+- Updated to liboqs 0.14.0.
+- ML-KEM keys can be generated from a seed via
+  `KeyEncapsulation.generate_keypair_seed()`.
 
 ## About
 
