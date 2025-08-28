@@ -48,14 +48,12 @@ def serialize_stateful_signature_key(
     one_asym_key = rfc5958.OneAsymmetricKey()
     one_asym_key["version"] = 1
     one_asym_key["privateKeyAlgorithm"]["algorithm"] = univ.ObjectIdentifier(
-        _get_oid_from_name(stateful_sig.method_name.decode("utf-8"))
+        _get_oid_from_name(stateful_sig.method_name.decode())
     )
-    # OCTET STRING privateKey
     one_asym_key["privateKey"] = stateful_sig.export_secret_key()
-    # [1] IMPLICIT BIT STRING publicKey (use simple tag, not constructed)
-    one_asym_key["publicKey"] = univ.BitString.fromOctetString(public_key).subtype(
-        implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1)
-    )
+    one_asym_key["publicKey"] = rfc5958.PublicKey().fromOctetString(public_key).subtype(
+        implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 1))
+
     der_data = encoder.encode(one_asym_key)
     fpath_obj = Path(fpath)
     with fpath_obj.open("wb") as f:
@@ -83,29 +81,18 @@ def deserialize_stateful_signature_key(
     oid = str(one_asym_key["privateKeyAlgorithm"]["algorithm"])
 
     # Accept any OID for supported families
-    if oid not in _OID_2_NAME and oid not in _NAME_2_OIDS.values():
+    if oid not in _OID_2_NAME:
         msg = f"Unsupported stateful signature OID: {oid}"
         raise ValueError(msg)
 
     private_key_bytes = one_asym_key["privateKey"].asOctets()
-
-    # publicKey is OPTIONAL; guard and normalize to bytes
-    public_key_bytes: Optional[bytes]
-    try:
-        public_field = one_asym_key["publicKey"]
-        public_key_bytes = public_field.asOctets() if getattr(public_field, "isValue", False) else None
-    except Exception:
-        public_key_bytes = None
-
-    if public_key_bytes is None:
-        raise ValueError("Serialized key does not contain a publicKey field")
-
+    public_key_bytes = one_asym_key["publicKey"].asOctets()
     return private_key_bytes, public_key_bytes
 
 
 def gen_or_load_stateful_signature_key(
         key_name: str, dir_name: Union[str, Path] = _KEY_DIR
-) -> Tuple[Optional[oqs.StatefulSignature], Optional[bytes]]:
+) -> Tuple[Optional[bytes], Optional[bytes]]:
     """
     Generate or load a stateful signature key pair.
 
@@ -117,12 +104,9 @@ def gen_or_load_stateful_signature_key(
     fpath = Path(dir_name) / f"{key_file_name}.der"
 
     if Path(fpath).exists():
-        private_key_bytes, public_key_bytes = deserialize_stateful_signature_key(
+        return deserialize_stateful_signature_key(
             key_file_name, dir_name=dir_name
         )
-        stfl_sig = oqs.StatefulSignature(key_name)
-        stfl_sig.import_secret_key(private_key_bytes)
-        return stfl_sig, public_key_bytes
 
     # Check alternative path for test keys, to avoid regenerating for every test run.
     alt_path = Path(str(_KEY_DIR).replace("xmss_xmssmt_keys", "tmp_keys", 1))
@@ -131,17 +115,15 @@ def gen_or_load_stateful_signature_key(
         private_key_bytes, public_key_bytes = deserialize_stateful_signature_key(
             key_name, dir_name=alt_path
         )
-        stfl_sig = oqs.StatefulSignature(key_name)
-        stfl_sig.import_secret_key(private_key_bytes)
-        return stfl_sig, public_key_bytes
+        return private_key_bytes, public_key_bytes
 
     # Opportunistic generation for fast XMSS parameter sets used in tests
     if key_name.startswith("XMSS-") and "_16_" in key_name:
         Path(alt_path).mkdir(parents=True, exist_ok=True)
         stfl_sig = oqs.StatefulSignature(key_name)
         public_key_bytes = stfl_sig.generate_keypair()
-        serialize_stateful_signature_key(stfl_sig, public_key_bytes, str(alt_fpath))
-        return stfl_sig, public_key_bytes
+        private_key_bytes = stfl_sig.export_secret_key()
+        return private_key_bytes, public_key_bytes
 
     return None, None
 
