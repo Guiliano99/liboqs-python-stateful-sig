@@ -17,6 +17,9 @@ import platform  # to learn the OS we're on
 import subprocess
 import tempfile  # to install liboqs on demand
 import time
+import faulthandler
+
+faulthandler.enable()
 
 try:
     import tomllib  # Python 3.11+
@@ -153,7 +156,6 @@ def _install_liboqs(
     oqs_version_to_install: Union[str, None] = None,
 ) -> None:
     """Install liboqs version oqs_version (if None, installs latest at HEAD) in the target_directory."""  # noqa: E501
-
     # Set explicit to `None` to install the lastest `liboqs` code.
     if oqs_version_to_install is None:
         pass
