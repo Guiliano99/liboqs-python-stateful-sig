@@ -113,9 +113,10 @@ def gen_or_load_stateful_signature_key(
 
     if key_name.startswith("XMSS-") and "_16_" in key_name:
         Path(alt_path).mkdir(parents=True, exist_ok=True)
-        with oqs.StatefulSignature(key_name) as stfl_sig:
-            public_key_bytes = stfl_sig.generate_keypair()
-        serialize_stateful_signature_key(stfl_sig, public_key_bytes, alt_fpath)
+        # Generate and serialize while the object is still open
+
+        stfl_sig = oqs.StatefulSignature(key_name)
+        public_key_bytes = stfl_sig.generate_keypair()
         serialize_stateful_signature_key(stfl_sig, public_key_bytes, str(alt_fpath))
         return deserialize_stateful_signature_key(key_name, dir_name=alt_path)
 
