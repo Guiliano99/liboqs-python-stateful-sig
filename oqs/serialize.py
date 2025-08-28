@@ -112,6 +112,7 @@ def gen_or_load_stateful_signature_key(
         return deserialize_stateful_signature_key(key_name, dir_name=alt_path)
 
     if key_name.startswith("XMSS-") and "_16_" in key_name:
+        return None, None
         Path(alt_path).mkdir(parents=True, exist_ok=True)
         # Generate and serialize while the object is still open
 
