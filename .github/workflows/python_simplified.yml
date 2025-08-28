@@ -41,4 +41,6 @@ jobs:
 
       - name: Run unit tests
         run: |
+          # Ensure dev extras (nose2, pyasn1, etc.) are present
+          uv sync --extra dev
           uv run nose2 --verbose
