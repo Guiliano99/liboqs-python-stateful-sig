@@ -3,6 +3,8 @@ import platform  # to learn the OS we're on
 import random
 from pathlib import Path
 
+from typing import Tuple
+
 from oqs.serialize import gen_or_load_stateful_signature_key
 
 import oqs
@@ -18,6 +20,17 @@ if platform.system() == "Windows":
     disabled_sig_patterns = [""]
 
 
+def _load_or_generate_key(alg_name: str) -> Tuple[oqs.StatefulSignature, bytes]:
+    private_key, public_key = gen_or_load_stateful_signature_key(alg_name, dir_name=_KEY_DIR)
+
+    if private_key is not None:
+        sig = oqs.StatefulSignature(alg_name, secret_key=private_key)
+        return sig, public_key
+    sig = oqs.StatefulSignature(alg_name)
+    public_key = sig.generate_keypair()
+    return sig, public_key
+
+
 def test_correctness() -> tuple[None, str]:
     for alg_name in oqs.get_enabled_stateful_sig_mechanisms():
         if alg_name.startswith("LMS"):
@@ -29,13 +42,10 @@ def test_correctness() -> tuple[None, str]:
 
 
 def check_correctness(alg_name: str) -> None:
-    private_key, public_key = gen_or_load_stateful_signature_key(alg_name, dir_name=_KEY_DIR)
-
-    with oqs.StatefulSignature(alg_name, secret_key=private_key) as sig:
-        message = bytes(random.getrandbits(8) for _ in range(100))
-        public_key = public_key or sig.generate_keypair()
-        signature = sig.sign(message)
-        assert sig.verify(message, signature, public_key)  # noqa: S101
+    sig, public_key = _load_or_generate_key(alg_name)
+    message = bytes(random.getrandbits(8) for _ in range(100))
+    signature = sig.sign(message)
+    assert sig.verify(message, signature, public_key)  # noqa: S101
 
 
 def test_wrong_message() -> tuple[None, str]:
@@ -50,14 +60,11 @@ def test_wrong_message() -> tuple[None, str]:
 
 
 def check_wrong_message(alg_name: str) -> None:
-    private_key, public_key = gen_or_load_stateful_signature_key(alg_name, dir_name=_KEY_DIR)
-
-    with oqs.StatefulSignature(alg_name, secret_key=private_key) as sig:
-        message = bytes(random.getrandbits(8) for _ in range(100))
-        public_key = public_key or sig.generate_keypair()
-        signature = sig.sign(message)
-        wrong_message = bytes(random.getrandbits(8) for _ in range(len(message)))
-        assert not (sig.verify(wrong_message, signature, public_key))  # noqa: S101
+    sig, public_key = _load_or_generate_key(alg_name)
+    message = bytes(random.getrandbits(8) for _ in range(100))
+    signature = sig.sign(message)
+    wrong_message = bytes(random.getrandbits(8) for _ in range(len(message)))
+    assert not (sig.verify(wrong_message, signature, public_key))  # noqa: S101
 
 
 def test_wrong_signature() -> tuple[None, str]:
@@ -71,14 +78,11 @@ def test_wrong_signature() -> tuple[None, str]:
 
 
 def check_wrong_signature(alg_name: str) -> None:
-    private_key, public_key = gen_or_load_stateful_signature_key(alg_name, dir_name=_KEY_DIR)
-
-    with oqs.StatefulSignature(alg_name, secret_key=private_key) as sig:
-        message = bytes(random.getrandbits(8) for _ in range(100))
-        public_key = public_key or sig.generate_keypair()
-        signature = sig.sign(message)
-        wrong_signature = bytes(random.getrandbits(8) for _ in range(len(signature)))
-        assert not (sig.verify(message, wrong_signature, public_key))  # noqa: S101
+    sig, public_key = _load_or_generate_key(alg_name)
+    message = bytes(random.getrandbits(8) for _ in range(100))
+    signature = sig.sign(message)
+    wrong_signature = bytes(random.getrandbits(8) for _ in range(len(signature)))
+    assert not (sig.verify(message, wrong_signature, public_key))  # noqa: S101
 
 
 def test_wrong_public_key() -> tuple[None, str]:
@@ -92,14 +96,11 @@ def test_wrong_public_key() -> tuple[None, str]:
 
 
 def check_wrong_public_key(alg_name: str) -> None:
-    private_key, public_key = gen_or_load_stateful_signature_key(alg_name, dir_name=_KEY_DIR)
-
-    with oqs.StatefulSignature(alg_name, secret_key=private_key) as sig:
-        message = bytes(random.getrandbits(8) for _ in range(100))
-        public_key = public_key or sig.generate_keypair()
-        signature = sig.sign(message)
-        wrong_public_key = bytes(random.getrandbits(8) for _ in range(len(public_key)))
-        assert not (sig.verify(message, signature, wrong_public_key))  # noqa: S101
+    sig, public_key = _load_or_generate_key(alg_name)
+    message = bytes(random.getrandbits(8) for _ in range(100))
+    signature = sig.sign(message)
+    wrong_public_key = bytes(random.getrandbits(8) for _ in range(len(public_key)))
+    assert not (sig.verify(message, signature, wrong_public_key))  # noqa: S101
 
 
 def test_not_supported() -> None:
