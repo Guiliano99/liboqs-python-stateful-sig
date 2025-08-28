@@ -118,6 +118,7 @@ def gen_or_load_stateful_signature_key(
         )
         return private_key_bytes, public_key_bytes
 
+    return None, None
     # Opportunistic generation for fast XMSS parameter sets used in tests
     if key_name.startswith("XMSS-") and "_16_" in key_name:
         Path(alt_path).mkdir(parents=True, exist_ok=True)
