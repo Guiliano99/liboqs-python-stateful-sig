@@ -36,6 +36,7 @@ from typing import (
     cast,
     Optional,
 )
+
 if TYPE_CHECKING:
     from collections.abc import Sequence, Iterable
     from types import TracebackType
@@ -746,8 +747,10 @@ class Signature(ct.Structure):
         :param message: the message to sign.
         """
         if context and not self._sig.contents.sig_with_ctx_support:
-            msg = (f"Signing with context is not supported for: "
-                   f"{self._sig.contents.method_name.decode()}")
+            msg = (
+                f"Signing with context is not supported for: "
+                f"{self._sig.contents.method_name.decode()}"
+            )
             raise RuntimeError(msg)
 
         # Provide length to avoid extra null char

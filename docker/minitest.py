@@ -65,8 +65,7 @@ for sigs, kexs in assignments.items():
         except:
             print(
                 "Test of algorithm combination SIG %s/KEX %s failed. "
-                "Are all algorithms supported by current OQS library?"
-                % (sigs, kex)
+                "Are all algorithms supported by current OQS library?" % (sigs, kex)
             )
 
     if "SHORT_TEST" in os.environ:
