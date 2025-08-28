@@ -5,7 +5,7 @@ using OneAsymmetricKey (PKCS#8) structure.
 
 import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 
 from pyasn1.codec.der import encoder, decoder
 from pyasn1.type import univ, tag
@@ -50,9 +50,11 @@ def serialize_stateful_signature_key(
     one_asym_key["privateKeyAlgorithm"]["algorithm"] = univ.ObjectIdentifier(
         _get_oid_from_name(stateful_sig.method_name.decode("utf-8"))
     )
+    # OCTET STRING privateKey
     one_asym_key["privateKey"] = stateful_sig.export_secret_key()
+    # [1] IMPLICIT BIT STRING publicKey (use simple tag, not constructed)
     one_asym_key["publicKey"] = univ.BitString.fromOctetString(public_key).subtype(
-        implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 1)
+        implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1)
     )
     der_data = encoder.encode(one_asym_key)
     fpath_obj = Path(fpath)
@@ -62,64 +64,84 @@ def serialize_stateful_signature_key(
 
 
 def deserialize_stateful_signature_key(
-    key_name: str, dir_name: Union[str, Path] = _KEY_DIR
-) -> tuple[bytes, bytes]:
+        key_name: str, dir_name: Union[str, Path] = _KEY_DIR
+) -> Tuple[bytes, bytes]:
     """
     Deserialize the stateful signature key from a `OneAsymmetricKey` structure.
 
-    :param key_name: The file path to load the serialized key.
+    :param key_name: The base name of the serialized key (without extension).
     :param dir_name: The directory where the key files are stored.
-    :return: A tuple containing the method name, private key bytes, and public key bytes.
+    :return: A tuple (private_key_bytes, public_key_bytes).
     """
     key_name = key_name.replace("/", "_layers_", 1).lower()
     fpath = Path(dir_name) / f"{key_name}.der"
 
     with fpath.open("rb") as f:
         der_data = f.read()
+
     one_asym_key = decoder.decode(der_data, asn1Spec=rfc5958.OneAsymmetricKey())[0]
     oid = str(one_asym_key["privateKeyAlgorithm"]["algorithm"])
+
     # Accept any OID for supported families
     if oid not in _OID_2_NAME and oid not in _NAME_2_OIDS.values():
         msg = f"Unsupported stateful signature OID: {oid}"
         raise ValueError(msg)
 
     private_key_bytes = one_asym_key["privateKey"].asOctets()
-    public_key_bytes = one_asym_key["publicKey"].asOctets()
+
+    # publicKey is OPTIONAL; guard and normalize to bytes
+    public_key_bytes: Optional[bytes]
+    try:
+        public_field = one_asym_key["publicKey"]
+        public_key_bytes = public_field.asOctets() if getattr(public_field, "isValue", False) else None
+    except Exception:
+        public_key_bytes = None
+
+    if public_key_bytes is None:
+        raise ValueError("Serialized key does not contain a publicKey field")
+
     return private_key_bytes, public_key_bytes
 
 
 def gen_or_load_stateful_signature_key(
-    key_name: str, dir_name: str = _KEY_DIR
-) -> tuple[Optional[bytes], Optional[bytes]]:
+        key_name: str, dir_name: Union[str, Path] = _KEY_DIR
+) -> Tuple[Optional[oqs.StatefulSignature], Optional[bytes]]:
     """
     Generate or load a stateful signature key pair.
 
     :param key_name: The name of the stateful signature mechanism.
     :param dir_name: The directory where the key files are stored.
-    :return: A tuple containing the stateful signature object and public key bytes.
+    :return: A tuple (stateful_signature_object, public_key_bytes).
     """
     key_file_name = key_name.replace("/", "_layers_", 1).lower()
     fpath = Path(dir_name) / f"{key_file_name}.der"
 
     if Path(fpath).exists():
-        return deserialize_stateful_signature_key(key_file_name, dir_name=dir_name)
+        private_key_bytes, public_key_bytes = deserialize_stateful_signature_key(
+            key_file_name, dir_name=dir_name
+        )
+        stfl_sig = oqs.StatefulSignature(key_name)
+        stfl_sig.import_secret_key(private_key_bytes)
+        return stfl_sig, public_key_bytes
 
-    # Check alternative path for test keys, to not generate them for every test run,
-    # to save time.
+    # Check alternative path for test keys, to avoid regenerating for every test run.
     alt_path = Path(str(_KEY_DIR).replace("xmss_xmssmt_keys", "tmp_keys", 1))
     alt_fpath = alt_path / f"{key_file_name}.der"
     if Path(alt_fpath).exists():
-        return deserialize_stateful_signature_key(key_name, dir_name=alt_path)
+        private_key_bytes, public_key_bytes = deserialize_stateful_signature_key(
+            key_name, dir_name=alt_path
+        )
+        stfl_sig = oqs.StatefulSignature(key_name)
+        stfl_sig.import_secret_key(private_key_bytes)
+        return stfl_sig, public_key_bytes
 
+    # Opportunistic generation for fast XMSS parameter sets used in tests
     if key_name.startswith("XMSS-") and "_16_" in key_name:
-        return None, None
         Path(alt_path).mkdir(parents=True, exist_ok=True)
-        # Generate and serialize while the object is still open
-
         stfl_sig = oqs.StatefulSignature(key_name)
         public_key_bytes = stfl_sig.generate_keypair()
         serialize_stateful_signature_key(stfl_sig, public_key_bytes, str(alt_fpath))
-        return deserialize_stateful_signature_key(key_name, dir_name=alt_path)
+        return stfl_sig, public_key_bytes
 
     return None, None
 
@@ -141,3 +163,4 @@ if __name__ == "__main__":
     if private_bytes is None or public_bytes is None:
         ERROR_MSG = "Could not load the XMSS key"
         raise ValueError(ERROR_MSG)
+    logging.info("Loaded XMSS key, public key len: %d", len(public_bytes))
