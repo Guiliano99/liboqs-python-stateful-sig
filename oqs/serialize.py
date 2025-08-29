@@ -88,6 +88,30 @@ def deserialize_stateful_signature_key(
         msg = f"Unsupported stateful signature OID: {oid}"
         raise ValueError(msg)
 
+def _may_generate_stfl_key(
+    key_name: str, dir_name: str
+) -> tuple[Optional[bytes], Optional[bytes]]:
+    """
+    Decide whether to generate a stateful signature key for the given algorithm name.
+
+    Currently, this function allows opportunistic generation only for fast XMSS parameter sets
+    used in tests, specifically those starting with "XMSS-" and containing "_16_".
+
+    :param key_name: The name of the stateful signature mechanism.
+    :param dir_name: The directory where the key files are stored.
+    :return: A tuple (private_key_bytes, public_key_bytes) if generated, else (None, None).
+    """
+    alt_path = Path(str(dir_name).replace("xmss_xmssmt_keys", "tmp_keys", 1))
+    alt_fpath = alt_path / f"{key_name.replace('/', '_layers_', 1).lower()}.der"
+    if key_name.startswith("XMSS-") and "_16_" in key_name:
+        Path(alt_path).mkdir(parents=True, exist_ok=True)
+        with oqs.StatefulSignature(key_name) as stfl_sig:
+            public_key_bytes = stfl_sig.generate_keypair()
+            private_key_bytes = stfl_sig.export_secret_key()
+            serialize_stateful_signature_key(stfl_sig, public_key_bytes, str(alt_fpath))
+            return private_key_bytes, public_key_bytes
+
+    return None, None
     private_key_bytes = one_asym_key["privateKey"].asOctets()
     public_key_bytes = one_asym_key["publicKey"].asOctets()
     return private_key_bytes, public_key_bytes
@@ -118,16 +142,8 @@ def gen_or_load_stateful_signature_key(
         )
         return private_key_bytes, public_key_bytes
 
-    return None, None
     # Opportunistic generation for fast XMSS parameter sets used in tests
-    if key_name.startswith("XMSS-") and "_16_" in key_name:
-        Path(alt_path).mkdir(parents=True, exist_ok=True)
-        with oqs.StatefulSignature(key_name) as stfl_sig:
-            public_key_bytes = stfl_sig.generate_keypair()
-            private_key_bytes = stfl_sig.export_secret_key()
-            serialize_stateful_signature_key(stfl_sig, public_key_bytes, str(alt_fpath))
-            return private_key_bytes, public_key_bytes
-    return None, None
+    return _may_generate_stfl_key(key_name, dir_name)
 
 
 if __name__ == "__main__":
