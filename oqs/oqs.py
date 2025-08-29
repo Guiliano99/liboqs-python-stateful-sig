@@ -1035,6 +1035,13 @@ class StatefulSignature(ct.Structure):
         buf = ct.create_string_buffer(data, len(data))
         rc = native().OQS_SIG_STFL_SECRET_KEY_deserialize(self._secret_key, buf, len(data), None)
         if rc != OQS_SUCCESS:
+            if len(data) != int(self.length_secret_key):
+                msg = (
+                    f"Secret key length must be {self.length_secret_key} bytes, "
+                    f"got {len(data)} bytes"
+                )
+                raise ValueError(msg)
+
             msg = "Secret‑key deserialization failed"
             raise RuntimeError(msg)
 
