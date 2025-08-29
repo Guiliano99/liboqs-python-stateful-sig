@@ -1184,6 +1184,20 @@ class StatefulSignature(ct.Structure):
 native().OQS_SIG_STFL_new.restype = ct.POINTER(StatefulSignature)
 native().OQS_SIG_STFL_SECRET_KEY_new.restype = ct.c_void_p
 native().OQS_SIG_STFL_SECRET_KEY_new.argtypes = [ct.c_char_p]
+# Added precise signatures for (de)serialization to avoid ABI issues
+native().OQS_SIG_STFL_SECRET_KEY_serialize.restype = ct.c_int
+native().OQS_SIG_STFL_SECRET_KEY_serialize.argtypes = [
+    ct.POINTER(ct.POINTER(ct.c_uint8)),
+    ct.POINTER(ct.c_size_t),
+    ct.c_void_p,
+]
+native().OQS_SIG_STFL_SECRET_KEY_deserialize.restype = ct.c_int
+native().OQS_SIG_STFL_SECRET_KEY_deserialize.argtypes = [
+    ct.c_void_p,
+    ct.c_void_p,
+    ct.c_size_t,
+    ct.c_void_p,
+]
 native().OQS_SIG_STFL_SECRET_KEY_SET_store_cb.argtypes = [ct.c_void_p, ct.c_void_p, ct.c_void_p]
 native().OQS_SIG_STFL_keypair.argtypes = [ct.POINTER(StatefulSignature), ct.c_void_p, ct.c_void_p]
 native().OQS_SIG_STFL_sign.argtypes = [
