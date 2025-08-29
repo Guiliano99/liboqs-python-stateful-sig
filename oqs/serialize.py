@@ -5,7 +5,7 @@ using OneAsymmetricKey (PKCS#8) structure.
 
 import logging
 from pathlib import Path
-from typing import Optional, Union, Tuple
+from typing import Optional, Union
 
 from pyasn1.codec.der import encoder, decoder
 from pyasn1.type import univ, tag
@@ -66,7 +66,7 @@ def serialize_stateful_signature_key(
 
 def deserialize_stateful_signature_key(
     key_name: str, dir_name: Union[str, Path] = _KEY_DIR
-) -> Tuple[bytes, bytes]:
+) -> tuple[bytes, bytes]:
     """
     Deserialize the stateful signature key from a `OneAsymmetricKey` structure.
 
@@ -119,7 +119,7 @@ def _may_generate_stfl_key(
 
 def gen_or_load_stateful_signature_key(
     key_name: str, dir_name: Union[str, Path] = _KEY_DIR
-) -> Tuple[Optional[bytes], Optional[bytes]]:
+) -> tuple[Optional[bytes], Optional[bytes]]:
     """
     Generate or load a stateful signature key pair.
 
