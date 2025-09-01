@@ -11,15 +11,15 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: 'test-python-detailed'
-  cancel-in-progress: true
-
 env:
   BUILD_TYPE: Debug
   LD_LIBRARY_PATH: /usr/local/lib
   WIN_LIBOQS_INSTALL_PATH: C:\liboqs
   VERSION: 0.14.0
+
+concurrency:
+  group: test-python-detailed-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
