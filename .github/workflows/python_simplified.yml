@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: 'test-python_simplified'
+  cancel-in-progress: true
+
 jobs:
   build:
     strategy:
