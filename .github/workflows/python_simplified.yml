@@ -12,8 +12,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: 'test-python_simplified'
-  cancel-in-progress: true
+  group: test-python-simplified-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
