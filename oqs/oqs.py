@@ -17,6 +17,9 @@ import platform  # to learn the OS we're on
 import subprocess
 import tempfile  # to install liboqs on demand
 import time
+import faulthandler
+
+faulthandler.enable()
 
 try:
     import tomllib  # Python 3.11+
@@ -36,6 +39,7 @@ from typing import (
     cast,
     Optional,
 )
+
 if TYPE_CHECKING:
     from collections.abc import Sequence, Iterable
     from types import TracebackType
@@ -152,10 +156,15 @@ def _install_liboqs(
     oqs_version_to_install: Union[str, None] = None,
 ) -> None:
     """Install liboqs version oqs_version (if None, installs latest at HEAD) in the target_directory."""  # noqa: E501
-    if "rc" in oqs_version_to_install:
+    # Set explicit to `None` to install the lastest `liboqs` code.
+    if oqs_version_to_install is None:
+        pass
+
+    elif "rc" in oqs_version_to_install:
         # removed the "-" from the version string
         tmp = oqs_version_to_install.split("rc")
         oqs_version_to_install = tmp[0] + "-rc" + tmp[1]
+
     with tempfile.TemporaryDirectory() as tmpdirname:
         oqs_install_cmd = [
             "cd",
@@ -746,8 +755,10 @@ class Signature(ct.Structure):
         :param message: the message to sign.
         """
         if context and not self._sig.contents.sig_with_ctx_support:
-            msg = (f"Signing with context is not supported for: "
-                   f"{self._sig.contents.method_name.decode()}")
+            msg = (
+                f"Signing with context is not supported for: "
+                f"{self._sig.contents.method_name.decode()}"
+            )
             raise RuntimeError(msg)
 
         # Provide length to avoid extra null char
@@ -1024,6 +1035,13 @@ class StatefulSignature(ct.Structure):
         buf = ct.create_string_buffer(data, len(data))
         rc = native().OQS_SIG_STFL_SECRET_KEY_deserialize(self._secret_key, buf, len(data), None)
         if rc != OQS_SUCCESS:
+            if len(data) != int(self.length_secret_key):
+                msg = (
+                    f"Secret key length must be {self.length_secret_key} bytes, "
+                    f"got {len(data)} bytes"
+                )
+                raise ValueError(msg)
+
             msg = "Secret‑key deserialization failed"
             raise RuntimeError(msg)
 
@@ -1173,6 +1191,20 @@ class StatefulSignature(ct.Structure):
 native().OQS_SIG_STFL_new.restype = ct.POINTER(StatefulSignature)
 native().OQS_SIG_STFL_SECRET_KEY_new.restype = ct.c_void_p
 native().OQS_SIG_STFL_SECRET_KEY_new.argtypes = [ct.c_char_p]
+# Added precise signatures for (de)serialization to avoid ABI issues
+native().OQS_SIG_STFL_SECRET_KEY_serialize.restype = ct.c_int
+native().OQS_SIG_STFL_SECRET_KEY_serialize.argtypes = [
+    ct.POINTER(ct.POINTER(ct.c_uint8)),
+    ct.POINTER(ct.c_size_t),
+    ct.c_void_p,
+]
+native().OQS_SIG_STFL_SECRET_KEY_deserialize.restype = ct.c_int
+native().OQS_SIG_STFL_SECRET_KEY_deserialize.argtypes = [
+    ct.c_void_p,
+    ct.c_void_p,
+    ct.c_size_t,
+    ct.c_void_p,
+]
 native().OQS_SIG_STFL_SECRET_KEY_SET_store_cb.argtypes = [ct.c_void_p, ct.c_void_p, ct.c_void_p]
 native().OQS_SIG_STFL_keypair.argtypes = [ct.POINTER(StatefulSignature), ct.c_void_p, ct.c_void_p]
 native().OQS_SIG_STFL_sign.argtypes = [

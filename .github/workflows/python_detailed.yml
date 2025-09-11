@@ -17,6 +17,10 @@ env:
   WIN_LIBOQS_INSTALL_PATH: C:\liboqs
   VERSION: 0.14.0
 
+concurrency:
+  group: test-python-detailed-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
     strategy:
@@ -66,6 +70,8 @@ jobs:
       - name: Run unit tests POSIX
         if: matrix.os != 'windows-latest'
         run: |
+          # Ensure dev extras (nose2, pyasn1, etc.) are present
+          uv sync --extra dev
           uv run nose2 --verbose
 
       - name: Install liboqs Windows
@@ -96,4 +102,6 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           set PATH=%PATH%;${{env.WIN_LIBOQS_INSTALL_PATH}}\bin
+          rem Ensure dev extras (nose2, pyasn1, etc.) are present
+          uv sync --extra dev
           uv run nose2 --verbose
