@@ -17,7 +17,7 @@ env:
   WIN_LIBOQS_INSTALL_PATH: C:\liboqs
   VERSION: 0.14.0
   LIBOQS_STATEFUL_SIG_KEY_DIR: ${{ github.workspace }}/.cache/stateful_sig_keys
-  STATEFUL_SIG_CACHE_KEY_PREFIX: ${{ format('stateful-keys-{0}', replace(github.repository, '/', '-')) }}
+  STATEFUL_SIG_CACHE_KEY_PREFIX: ${{ format('stateful-keys-{0}-{1}', github.repository_owner, github.event.repository.name) }}
 
 concurrency:
   group: test-python-detailed-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
