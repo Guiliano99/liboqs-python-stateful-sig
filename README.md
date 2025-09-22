@@ -154,6 +154,26 @@ Execute
 nose2 --verbose
 ```
 
+### Stateful signature key cache
+
+Stateful signature algorithms such as XMSS and XMSSMT require long-running key
+generation. liboqs-python now stores these test keys exclusively in a local
+cache rather than keeping them in the repository. The cache location defaults to
+the directory referenced by the ``LIBOQS_STATEFUL_SIG_KEY_DIR`` environment
+variable. When the variable is not set, a platform-specific directory is used
+(``$XDG_CACHE_HOME/liboqs-python/stateful_sig_keys`` on Unix-like systems or
+``%LOCALAPPDATA%\liboqs-python\stateful_sig_keys`` on Windows).
+
+Run the helper to generate any missing keys and populate the cache:
+
+```shell
+python -m oqs.serialize
+```
+
+In continuous integration environments, configure ``LIBOQS_STATEFUL_SIG_KEY_DIR``
+to point to a location covered by the job's cache so that keys can be reused
+across runs. Avoid committing the generated key material to the repository.
+
 ---
 
 ## Usage in standalone applications

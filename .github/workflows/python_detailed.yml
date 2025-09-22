@@ -16,6 +16,8 @@ env:
   LD_LIBRARY_PATH: /usr/local/lib
   WIN_LIBOQS_INSTALL_PATH: C:\liboqs
   VERSION: 0.14.0
+  LIBOQS_STATEFUL_SIG_KEY_DIR: ${{ github.workspace }}/.cache/stateful_sig_keys
+  STATEFUL_SIG_CACHE_KEY_PREFIX: ${{ format('stateful-keys-{0}', replace(github.repository, '/', '-')) }}
 
 concurrency:
   group: test-python-detailed-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
@@ -30,6 +32,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Restore stateful signature key cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.LIBOQS_STATEFUL_SIG_KEY_DIR }}
+          key: ${{ env.STATEFUL_SIG_CACHE_KEY_PREFIX }}-${{ runner.os }}-${{ env.VERSION }}-${{ hashFiles('oqs/serialize.py') }}
+          restore-keys: |
+            ${{ env.STATEFUL_SIG_CACHE_KEY_PREFIX }}-${{ runner.os }}-${{ env.VERSION }}-
+            ${{ env.STATEFUL_SIG_CACHE_KEY_PREFIX }}-${{ runner.os }}-
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -55,6 +66,10 @@ jobs:
           cmake --build liboqs/build --parallel 4
           sudo cmake --build liboqs/build --target install
 
+      - name: Ensure stateful signature keys POSIX
+        if: matrix.os != 'windows-latest'
+        run: uv run python -m oqs.serialize
+
       - name: Run examples POSIX
         if: matrix.os != 'windows-latest'
         run: |
@@ -79,9 +94,16 @@ jobs:
         shell: cmd
         run: |
           git clone --branch ${{env.VERSION}} --single-branch --depth 1 https://github.com/open-quantum-safe/liboqs
-          cmake -S liboqs -B liboqs\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{env.WIN_LIBOQS_INSTALL_PATH}} -DBUILD_SHARED_LIBS=ON -DOQS_BUILD_ONLY_LIB=ON -DOQS_BUILD_ONLY_LIB=ON -DOQS_ENABLE_SIG_STFL_LMS=ON -DOQS_ENABLE_SIG_STFL_XMSS=ON -DOQS_HAZARDOUS_EXPERIMENTAL_ENABLE_SIG_STFL_KEY_SIG_GEN=ON ‑DOQS_ALLOW_STFL_KEY_AND_SIG_GEN=ON
+          cmake -S liboqs -B liboqs\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{env.WIN_LIBOQS_INSTALL_PATH}} -DBUILD_SHARED_LIBS=ON -DOQS_BUILD_ONLY_LIB=ON -DOQS_BUILD_ONLY_LIB=ON -DOQS_ENABLE_SIG_STFL_LMS=ON -DOQS_ENABLE_SIG_STFL_XMSS=ON -DOQS_HAZARDOUS_EXPERIMENTAL_ENABLE_SIG_STFL_KEY_SIG_GEN=ON -DOQS_ALLOW_STFL_KEY_AND_SIG_GEN=ON
           cmake --build liboqs\build --parallel 4
           cmake --build liboqs\build --target install
+
+      - name: Ensure stateful signature keys Windows
+        if: matrix.os == 'windows-latest'
+        shell: cmd
+        run: |
+          set PATH=%PATH%;${{env.WIN_LIBOQS_INSTALL_PATH}}\bin
+          uv run python -m oqs.serialize
 
       - name: Run examples Windows
         if: matrix.os == 'windows-latest'

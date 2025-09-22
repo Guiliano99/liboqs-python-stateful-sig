@@ -121,4 +121,3 @@ pyvenv.cfg
 
 # uv
 /uv.lock
-/data/tmp_keys/

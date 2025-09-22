@@ -1,17 +1,15 @@
 import logging
 import platform  # to learn the OS we're on
 import random
-from pathlib import Path
-
 from typing import Tuple
 
-from oqs.serialize import gen_or_load_stateful_signature_key
+from oqs.serialize import STATEFUL_SIG_KEY_DIR, gen_or_load_stateful_signature_key
 
 import oqs
 
 _skip_names = ["LMS_SHA256_H20_W8_H10_W8", "LMS_SHA256_H20_W8_H15_W8", "LMS_SHA256_H20_W8_H20_W8"]
 
-_KEY_DIR = Path(__file__).resolve().parent.parent / "data" / "xmss_xmssmt_keys"
+_KEY_DIR = STATEFUL_SIG_KEY_DIR
 
 # Sigs for which unit testing is disabled
 disabled_sig_patterns = []
@@ -22,12 +20,7 @@ if platform.system() == "Windows":
 
 def _load_or_generate_key(alg_name: str) -> Tuple[oqs.StatefulSignature, bytes]:
     private_key, public_key = gen_or_load_stateful_signature_key(alg_name, dir_name=_KEY_DIR)
-
-    if private_key is not None:
-        sig = oqs.StatefulSignature(alg_name, secret_key=private_key)
-        return sig, public_key
-    sig = oqs.StatefulSignature(alg_name)
-    public_key = sig.generate_keypair()
+    sig = oqs.StatefulSignature(alg_name, secret_key=private_key)
     return sig, public_key
 
 
