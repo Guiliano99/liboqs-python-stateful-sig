@@ -1140,7 +1140,11 @@ class StatefulSignature(ct.Structure):
             msg = "Secret‑key serialization failed"
             raise ValueError(msg)
         data = ct.string_at(buf_ptr, buf_len.value)
-        ct.CDLL(ct.util.find_library("c")).free(buf_ptr)
+
+        native().OQS_MEM_cleanse(
+            buf_ptr,
+            buf_len
+        )
         return data
 
     def sigs_total(self) -> int:
