@@ -7,13 +7,30 @@ import argparse
 import logging
 import os
 from pathlib import Path
-from typing import Iterable, Union
+from typing import Iterable, Optional, Union
 
 from pyasn1.codec.der import encoder, decoder
 from pyasn1.type import univ, tag
 
 import oqs
 from pyasn1_alt_modules import rfc5958
+
+DEFAULT_CACHED_STATEFUL_SIG_ALGORITHMS: tuple[str, ...] = (
+    "XMSS-SHA2_16_512",
+    "XMSS-SHA2_20_192",
+    "XMSS-SHA2_20_256",
+    "XMSS-SHA2_20_512",
+    "XMSS-SHAKE_16_256",
+    "XMSS-SHAKE_16_512",
+    "XMSS-SHAKE_20_256",
+    "XMSS-SHAKE_20_512",
+    "XMSS-SHAKE256_20_192",
+    "XMSS-SHAKE256_20_256",
+    "XMSSMT-SHA2_40/2_256",
+    "XMSSMT-SHA2_60/3_256",
+    "XMSSMT-SHAKE_40/2_256",
+    "XMSSMT-SHAKE_60/3_256",
+)
 
 _CACHE_ENV_VAR = "LIBOQS_STATEFUL_SIG_KEY_DIR"
 _NAME_2_OIDS = {
@@ -41,6 +58,14 @@ def _get_default_cache_dir() -> Path:
 
 STATEFUL_SIG_KEY_DIR = _get_default_cache_dir()
 _KEY_DIR = STATEFUL_SIG_KEY_DIR
+
+_NON_PERSISTENT_KEY_CACHE: dict[tuple[str, str], tuple[bytes, bytes]] = {}
+
+
+def _normalise_key_file_name(key_name: str) -> str:
+    """Return the canonical cache file name for a key."""
+
+    return key_name.replace("/", "_layers_", 1).lower()
 
 
 def _get_oid_from_name(name: str) -> str:
@@ -95,9 +120,9 @@ def deserialize_stateful_signature_key(
     :param dir_name: The directory where the key files are stored.
     :return: A tuple (private_key_bytes, public_key_bytes).
     """
-    key_name = key_name.replace("/", "_layers_", 1).lower()
+    key_file_name = _normalise_key_file_name(key_name)
     dir_path = Path(dir_name).expanduser()
-    fpath = dir_path / f"{key_name}.der"
+    fpath = dir_path / f"{key_file_name}.der"
 
     with fpath.open("rb") as f:
         der_data = f.read()
@@ -119,6 +144,7 @@ def gen_or_load_stateful_signature_key(
     dir_name: Union[str, Path] = _KEY_DIR,
     *,
     force_generate: bool = False,
+    persist: Optional[bool] = None,
 ) -> tuple[bytes, bytes]:
     """
     Generate or load a stateful signature key pair.
@@ -126,20 +152,47 @@ def gen_or_load_stateful_signature_key(
     :param key_name: The name of the stateful signature mechanism.
     :param dir_name: The directory where the key files are stored.
     :param force_generate: Force key regeneration even if cached material exists.
+    :param persist: Override whether key material should be persisted to disk.
+        ``None`` applies the default heuristic of caching only the costly
+        algorithms listed in ``DEFAULT_CACHED_STATEFUL_SIG_ALGORITHMS`` when the
+        default cache directory is used.
     :return: A tuple (private_key_bytes, public_key_bytes).
     """
-    key_file_name = key_name.replace("/", "_layers_", 1).lower()
+    key_file_name = _normalise_key_file_name(key_name)
     dir_path = Path(dir_name).expanduser()
     fpath = dir_path / f"{key_file_name}.der"
+
+    default_dir = Path(_KEY_DIR).expanduser()
+    try:
+        dir_is_default = dir_path.resolve(strict=False) == default_dir.resolve(strict=False)
+    except RuntimeError:
+        # Some platforms may raise if the path cannot be resolved yet; best effort fallback.
+        dir_is_default = dir_path == default_dir
+
+    if persist is None:
+        persist = (not dir_is_default) or (
+            key_name in DEFAULT_CACHED_STATEFUL_SIG_ALGORITHMS
+        )
+
+    cache_key: Optional[tuple[str, str]] = None
+    if not persist:
+        cache_key = (str(dir_path), key_name)
+        if not force_generate and cache_key in _NON_PERSISTENT_KEY_CACHE:
+            return _NON_PERSISTENT_KEY_CACHE[cache_key]
 
     if not force_generate and fpath.exists():
         return deserialize_stateful_signature_key(key_name, dir_name=dir_path)
 
-    dir_path.mkdir(parents=True, exist_ok=True)
     with oqs.StatefulSignature(key_name) as stfl_sig:
         public_key_bytes = stfl_sig.generate_keypair()
         private_key_bytes = stfl_sig.export_secret_key()
-        serialize_stateful_signature_key(stfl_sig, public_key_bytes, fpath)
+
+        if persist:
+            dir_path.mkdir(parents=True, exist_ok=True)
+            serialize_stateful_signature_key(stfl_sig, public_key_bytes, fpath)
+        elif cache_key is not None:
+            _NON_PERSISTENT_KEY_CACHE[cache_key] = (private_key_bytes, public_key_bytes)
+
     return private_key_bytes, public_key_bytes
 
 
@@ -154,11 +207,14 @@ def ensure_cached_stateful_signature_keys(
     dir_path = Path(dir_name).expanduser()
     generated_paths: list[Path] = []
     for algorithm in algorithms:
-        key_file_name = algorithm.replace("/", "_layers_", 1).lower()
+        key_file_name = _normalise_key_file_name(algorithm)
         target_path = dir_path / f"{key_file_name}.der"
         existed = target_path.exists()
         gen_or_load_stateful_signature_key(
-            algorithm, dir_name=dir_path, force_generate=force
+            algorithm,
+            dir_name=dir_path,
+            force_generate=force,
+            persist=True,
         )
         if force or not existed:
             logging.info("Cached stateful signature key for %s at %s", algorithm, target_path)
@@ -180,8 +236,14 @@ if __name__ == "__main__":
         dest="algorithms",
         help=(
             "Stateful signature algorithm to cache. May be specified multiple times. "
-            "Defaults to all enabled mechanisms."
+            "Defaults to caching a curated list of costly mechanisms."
         ),
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        dest="cache_all",
+        help="Ensure keys for every enabled stateful signature algorithm.",
     )
     parser.add_argument(
         "-d",
@@ -204,11 +266,17 @@ if __name__ == "__main__":
         if args.directory
         else STATEFUL_SIG_KEY_DIR
     )
-    algs = (
-        list(args.algorithms)
-        if args.algorithms
-        else list(oqs.get_enabled_stateful_sig_mechanisms())
-    )
+    enabled_algs = list(oqs.get_enabled_stateful_sig_mechanisms())
+
+    if args.cache_all:
+        algs = enabled_algs
+    elif args.algorithms:
+        algs = list(args.algorithms)
+    else:
+        enabled_set = set(enabled_algs)
+        algs = [
+            alg for alg in DEFAULT_CACHED_STATEFUL_SIG_ALGORITHMS if alg in enabled_set
+        ]
     ensure_cached_stateful_signature_keys(algs, dir_name=cache_dir, force=args.force)
     logging.info(
         "Ensured %d stateful signature key(s) in %s",

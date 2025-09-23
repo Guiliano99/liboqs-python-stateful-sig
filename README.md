@@ -164,11 +164,16 @@ variable. When the variable is not set, a platform-specific directory is used
 (``$XDG_CACHE_HOME/liboqs-python/stateful_sig_keys`` on Unix-like systems or
 ``%LOCALAPPDATA%\liboqs-python\stateful_sig_keys`` on Windows).
 
-Run the helper to generate any missing keys and populate the cache:
+Run the helper to generate any missing keys and populate the cache for the
+curated set of slow-to-generate algorithms defined in
+``DEFAULT_CACHED_STATEFUL_SIG_ALGORITHMS``:
 
 ```shell
 python -m oqs.serialize
 ```
+
+Pass ``--all`` to generate keys for every enabled stateful signature
+mechanism, or ``--algorithm`` to target a specific subset.
 
 In continuous integration environments, configure ``LIBOQS_STATEFUL_SIG_KEY_DIR``
 to point to a location covered by the job's cache so that keys can be reused
