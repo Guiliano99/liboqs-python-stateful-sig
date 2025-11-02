@@ -20,6 +20,7 @@ jobs:
   build:
     env:
       LIBOQS_STATEFUL_SIG_KEY_DIR: ${{ github.workspace }}/.cache/stateful_sig_keys
+      OQS_FAULTHANDLER_ENABLED: "1"
     strategy:
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]

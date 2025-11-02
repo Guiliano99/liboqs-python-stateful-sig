@@ -17,6 +17,7 @@ env:
   WIN_LIBOQS_INSTALL_PATH: C:\liboqs
   VERSION: 0.14.0
   LIBOQS_STATEFUL_SIG_KEY_DIR: ${{ github.workspace }}/.cache/stateful_sig_keys
+  OQS_FAULTHANDLER_ENABLED: "1"
 
 concurrency:
   group: test-python-detailed-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
