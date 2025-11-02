@@ -19,18 +19,6 @@ import tempfile  # to install liboqs on demand
 import time
 import os
 
-# To identify issues in native code, we enable faulthandler.
-# As an example, this will print a stack trace if a segfault occurs,
-# if the STFL key generation flag was not set when building liboqs.
-if os.environ.get("PYOQS_ENABLE_FAULTHANDLER", "0") == "1":
-    import faulthandler
-
-    faulthandler.enable()
-    logging.info("liboqs-python faulthandler is enabled")
-else:
-    logging.info("liboqs-python faulthandler is disabled")
-
-
 try:
     import tomllib  # Python 3.11+
 except ImportError:  # Fallback for older versions
@@ -61,6 +49,17 @@ TStatefulSignature = TypeVar("TStatefulSignature", bound="StatefulSignature")
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(stdout))
+
+# To identify issues in native code, we enable faulthandler.
+# As an example, this will print a stack trace if a segfault occurs,
+# if the STFL key generation flag was not set when building liboqs.
+if os.environ.get("PYOQS_ENABLE_FAULTHANDLER", "0") == "1":
+    import faulthandler
+
+    faulthandler.enable()
+    logger.info("liboqs-python faulthandler is enabled")
+else:
+    logger.info("liboqs-python faulthandler is disabled")
 
 # Expected return value from native OQS functions
 OQS_SUCCESS: Final[int] = 0
