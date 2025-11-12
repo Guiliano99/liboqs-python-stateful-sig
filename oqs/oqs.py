@@ -255,7 +255,6 @@ def _load_liboqs() -> ct.CDLL:
         if platform.system() == "Windows"
         else oqs_install_dir / "lib64"  # $HOME/_oqs/lib64
     )
-    _install_liboqs(target_directory=oqs_install_dir, oqs_version_to_install=OQS_VERSION)
     try:
         liboqs = _load_shared_obj(
             name="oqs",
