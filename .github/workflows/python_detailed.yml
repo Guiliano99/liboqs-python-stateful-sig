@@ -51,6 +51,7 @@ jobs:
           git clone --branch ${{env.VERSION}} --single-branch --depth 1 https://github.com/open-quantum-safe/liboqs
           cmake -S liboqs -B liboqs/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_SHARED_LIBS=ON \
           -DOQS_BUILD_ONLY_LIB=ON -DOQS_BUILD_ONLY_LIB=ON -DOQS_ENABLE_SIG_STFL_LMS=ON \
+          -DOQS_ENABLE_SIG_SLH_DSA=ON \
           -DOQS_ENABLE_SIG_STFL_XMSS=ON -DOQS_HAZARDOUS_EXPERIMENTAL_ENABLE_SIG_STFL_KEY_SIG_GEN=ON \
           -DOQS_ALLOW_STFL_KEY_AND_SIG_GEN=ON
           cmake --build liboqs/build --parallel 4
@@ -80,7 +81,7 @@ jobs:
         shell: cmd
         run: |
           git clone --branch ${{env.VERSION}} --single-branch --depth 1 https://github.com/open-quantum-safe/liboqs
-          cmake -S liboqs -B liboqs\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{env.WIN_LIBOQS_INSTALL_PATH}} -DBUILD_SHARED_LIBS=ON -DOQS_BUILD_ONLY_LIB=ON -DOQS_BUILD_ONLY_LIB=ON -DOQS_ENABLE_SIG_STFL_LMS=ON -DOQS_ENABLE_SIG_STFL_XMSS=ON -DOQS_HAZARDOUS_EXPERIMENTAL_ENABLE_SIG_STFL_KEY_SIG_GEN=ON ‑DOQS_ALLOW_STFL_KEY_AND_SIG_GEN=ON
+          cmake -S liboqs -B liboqs\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{env.WIN_LIBOQS_INSTALL_PATH}} -DBUILD_SHARED_LIBS=ON -DOQS_BUILD_ONLY_LIB=ON -DOQS_BUILD_ONLY_LIB=ON -DOQS_ENABLE_SIG_STFL_LMS=ON -DOQS_ENABLE_SIG_STFL_XMSS=ON -DOQS_ENABLE_SIG_SLH_DSA=ON -DOQS_HAZARDOUS_EXPERIMENTAL_ENABLE_SIG_STFL_KEY_SIG_GEN=ON ‑DOQS_ALLOW_STFL_KEY_AND_SIG_GEN=ON
           cmake --build liboqs\build --parallel 4
           cmake --build liboqs\build --target install
 
