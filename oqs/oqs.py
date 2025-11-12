@@ -202,9 +202,6 @@ def _install_liboqs(
                 # Stateful signature algorithms:
                 "-DOQS_ENABLE_SIG_STFL_LMS=ON",  # LMS family
                 "-DOQS_ENABLE_SIG_STFL_XMSS=ON",  # XMSS family
-                "-DOQS_ENABLE_SIG_SLH_DSA_SHA2=OFF",
-                "-DOQS_ENABLE_SIG_SLH_DSA_SHAKE=OFF",
-                "-DOQS_ENABLE_KEM_NTRU=OFF",
                 # To support key-generation.
                 "-DOQS_HAZARDOUS_EXPERIMENTAL_ENABLE_SIG_STFL_KEY_SIG_GEN=ON",
                 f"-DCMAKE_INSTALL_PREFIX={target_directory}",
@@ -258,6 +255,7 @@ def _load_liboqs() -> ct.CDLL:
         if platform.system() == "Windows"
         else oqs_install_dir / "lib64"  # $HOME/_oqs/lib64
     )
+    _install_liboqs(target_directory=oqs_install_dir, oqs_version_to_install=OQS_VERSION)
     try:
         liboqs = _load_shared_obj(
             name="oqs",
