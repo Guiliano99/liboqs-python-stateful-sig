@@ -2,7 +2,7 @@ name: "Generate & Cache XMSS Keys"
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "**" ]
   workflow_dispatch:
   repository_dispatch: {}
 
