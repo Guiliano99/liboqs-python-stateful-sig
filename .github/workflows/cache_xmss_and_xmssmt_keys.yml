@@ -52,7 +52,7 @@ jobs:
 
       - name: Save cache
         if: steps.cache-restore.outputs.cache-hit != 'true'
-        uses: actions/cache@v4
+        uses: actions/cache/save@v4
         with:
           path: ${{ env.KEY_DIR }}
           key: xmss-${{ runner.os }}-v${{ env.KEY_GEN_VERSION }}
