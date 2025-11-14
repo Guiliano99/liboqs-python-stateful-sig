@@ -1,11 +1,10 @@
-name: Generate & Cache XMSS Keys
+name: "Generate & Cache XMSS Keys"
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
-  repository_dispatch:
-    types: [ "**" ]
+  repository_dispatch: {}
 
 env:
   KEY_GEN_VERSION: 1
