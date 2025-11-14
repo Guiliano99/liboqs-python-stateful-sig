@@ -13,6 +13,7 @@ env:
 jobs:
   build-cache:
     runs-on: ubuntu-latest
+    timeout-minutes: 240  # 4 hours
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,7 +25,7 @@ jobs:
 
       - name: Restore existing cache (optional)
         id: cache-restore
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ${{ env.KEY_DIR }}
           key: xmss-${{ runner.os }}-v${{ env.KEY_GEN_VERSION }}
@@ -32,7 +33,6 @@ jobs:
       - name: Generate keys when missing
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
-          rm -rf "${KEY_DIR}"
           mkdir -p "${KEY_DIR}"
           python - <<'PY'
           from pathlib import Path
@@ -40,18 +40,47 @@ jobs:
           import oqs, oqs.serialize
           out_dir = Path(os.environ["KEY_DIR"])
           out_dir.mkdir(parents=True, exist_ok=True)
-          for name in oqs.get_enabled_stateful_sig_mechanisms():
-              if name.startswith(("XMSS-", "XMSSMT-")):
-                  with oqs.StatefulSignature(name) as sig:
-                      pub = sig.generate_keypair()
-                      oqs.serialize.serialize_stateful_signature_key(
-                          sig, pub, out_dir / f"{name.replace('/', '_layers_', 1).lower()}.der"
-                      )
+          
+          # Get list of all keys that need to be generated
+          all_keys = [
+              name for name in oqs.get_enabled_stateful_sig_mechanisms()
+              if name.startswith(("XMSS-", "XMSSMT-"))
+          ]
+          
+          # Check which keys already exist
+          existing_keys = set()
+          for key_file in out_dir.glob("*.der"):
+              existing_keys.add(key_file.stem)
+          
+          # Generate only missing keys
+          generated = 0
+          skipped = 0
+          for name in all_keys:
+              key_filename = name.replace('/', '_layers_', 1).lower()
+              key_path = out_dir / f"{key_filename}.der"
+              
+              if key_path.exists():
+                  print(f"✓ Skipping {name} (already exists)")
+                  skipped += 1
+                  continue
+              
+              print(f"⚙ Generating {name}...")
+              with oqs.StatefulSignature(name) as sig:
+                  pub = sig.generate_keypair()
+                  oqs.serialize.serialize_stateful_signature_key(sig, pub, key_path)
+              print(f"✓ Generated {name}")
+              generated += 1
+          
+          print(f"\n=== Summary ===")
+          print(f"Generated: {generated}")
+          print(f"Skipped: {skipped}")
+          print(f"Total: {len(all_keys)}")
+          print(f"\nFiles in {KEY_DIR}:")
           PY
           ls -lah "${KEY_DIR}"
 
-      - name: Save cache
-        if: steps.cache-restore.outputs.cache-hit != 'true'
+      - name: Save cache (even on timeout/cancellation)
+        if: always() && steps.cache-restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ${{ env.KEY_DIR }}
