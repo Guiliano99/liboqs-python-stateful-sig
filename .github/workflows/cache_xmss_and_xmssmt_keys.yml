@@ -1,0 +1,53 @@
+name: Generate & Cache XMSS Keys
+
+on:
+  workflow_dispatch:
+
+env:
+  KEY_GEN_VERSION: 1
+  KEY_DIR: data/xmss_xmssmt_keys
+
+jobs:
+  build-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install .[dev]
+
+      - name: Restore existing cache (optional)
+        id: cache-restore
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.KEY_DIR }}
+          key: xmss-${{ runner.os }}-v${{ env.KEY_GEN_VERSION }}
+
+      - name: Generate keys when missing
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: |
+          rm -rf "${KEY_DIR}"
+          mkdir -p "${KEY_DIR}"
+          python - <<'PY'
+          from pathlib import Path
+          import oqs, oqs.serialize
+          out_dir = Path("${KEY_DIR}")
+          for name in oqs.get_enabled_stateful_sig_mechanisms():
+              if name.startswith(("XMSS-", "XMSSMT-")):
+                  with oqs.StatefulSignature(name) as sig:
+                      pub = sig.generate_keypair()
+                      oqs.serialize.serialize_stateful_signature_key(
+                          sig, pub, out_dir / f"{name.replace('/', '_layers_', 1).lower()}.der"
+                      )
+          PY
+          ls -lah "${KEY_DIR}"
+
+      - name: Save cache
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.KEY_DIR }}
+          key: xmss-${{ runner.os }}-v${{ env.KEY_GEN_VERSION }}
