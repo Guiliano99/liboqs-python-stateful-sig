@@ -37,8 +37,10 @@ jobs:
           mkdir -p "${KEY_DIR}"
           python - <<'PY'
           from pathlib import Path
+          import os
           import oqs, oqs.serialize
-          out_dir = Path("${KEY_DIR}")
+          out_dir = Path(os.environ["KEY_DIR"])
+          out_dir.mkdir(parents=True, exist_ok=True)
           for name in oqs.get_enabled_stateful_sig_mechanisms():
               if name.startswith(("XMSS-", "XMSSMT-")):
                   with oqs.StatefulSignature(name) as sig:
@@ -51,7 +53,7 @@ jobs:
 
       - name: Save cache
         if: steps.cache-restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache@v4
         with:
           path: ${{ env.KEY_DIR }}
           key: xmss-${{ runner.os }}-v${{ env.KEY_GEN_VERSION }}
