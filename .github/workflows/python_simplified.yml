@@ -15,6 +15,9 @@ concurrency:
   group: test-python-simplified-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+    KEY_GEN_VERSION: 1
+    KEY_DIR: data/xmss_xmssmt_keys
 
 jobs:
   build:
@@ -35,6 +38,13 @@ jobs:
 
       - name: Set up Python 3.9
         run: uv python install 3.9
+
+      - name: Restore existing cache
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.KEY_DIR }}
+          key: xmss-${{ runner.os }}-v${{ env.KEY_GEN_VERSION }}
 
       - name: Run examples
         run: |
