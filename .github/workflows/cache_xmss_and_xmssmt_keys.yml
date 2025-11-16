@@ -13,7 +13,7 @@ env:
 jobs:
   build-cache:
     runs-on: ubuntu-latest
-    timeout-minutes: 240  # 4 hours
+    timeout-minutes: 480  # 4 hours
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,13 +30,12 @@ jobs:
           path: ${{ env.KEY_DIR }}
           key: xmss-v${{ env.KEY_GEN_VERSION }}
 
-      - name: Show tree
+      - name: Show tree of cache directory
         run: |
           echo "Listing cache directory:"
           ls -R data/xmss_xmssmt_keys
 
       - name: Generate keys when missing
-        if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
           mkdir -p "${KEY_DIR}"
           python - <<'PY'
