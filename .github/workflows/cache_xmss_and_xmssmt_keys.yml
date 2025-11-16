@@ -31,7 +31,6 @@ jobs:
           key: xmss-v${{ env.KEY_GEN_VERSION }}
 
       - name: Show tree
-        if: always() && steps.cache-restore.outputs.cache-hit != 'true'
         run: |
           echo "Listing cache directory:"
           ls -R data/xmss_xmssmt_keys
