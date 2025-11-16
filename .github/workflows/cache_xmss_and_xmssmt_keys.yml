@@ -99,7 +99,7 @@ jobs:
           ls -lah "${KEY_DIR}"
 
       - name: Save cache (even on timeout/cancellation)
-        if: always() && steps.cache-restore.outputs.cache-hit != 'true'
+        if: always()
         uses: actions/cache/save@v4
         with:
           path: ${{ env.KEY_DIR }}
