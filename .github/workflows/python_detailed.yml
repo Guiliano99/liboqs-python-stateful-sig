@@ -51,7 +51,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.KEY_DIR }}
-          key: xmss-${{ runner.os }}-v${{ env.KEY_GEN_VERSION }}
+          key: xmss-v${{ env.KEY_GEN_VERSION }}
 
       - name: Install liboqs POSIX
         if: matrix.os != 'windows-latest'

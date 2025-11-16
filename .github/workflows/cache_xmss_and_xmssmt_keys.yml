@@ -28,7 +28,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.KEY_DIR }}
-          key: xmss-${{ runner.os }}-v${{ env.KEY_GEN_VERSION }}
+          key: xmss-v${{ env.KEY_GEN_VERSION }}
 
       - name: Generate keys when missing
         if: steps.cache-restore.outputs.cache-hit != 'true'
@@ -58,12 +58,12 @@ jobs:
           for name in all_keys:
               key_filename = name.replace('/', '_layers_', 1).lower()
               key_path = out_dir / f"{key_filename}.der"
-              
+
               if key_path.exists():
                   print(f"✓ Skipping {name} (already exists)")
                   skipped += 1
                   continue
-              
+
               print(f"⚙ Generating {name}...")
               with oqs.StatefulSignature(name) as sig:
                   pub = sig.generate_keypair()
@@ -74,7 +74,25 @@ jobs:
           print(f"\n=== Summary ===")
           print(f"Generated: {generated}")
           print(f"Skipped: {skipped}")
-          print(f"Total: {len(all_keys)}")
+          total = len(all_keys)
+          print(f"Total: {total}")
+
+          missing = []
+          for name in all_keys:
+              key_filename = name.replace('/', '_layers_', 1).lower()
+              key_path = out_dir / f"{key_filename}.der"
+              if not key_path.exists():
+                  missing.append(name)
+
+          if missing:
+              print("\nERROR: The following keys could not be generated:")
+              for name in missing:
+                  print(f" - {name}")
+              raise SystemExit(
+                  f"Failed to generate {len(missing)} of {total} XMSS/XMSSMT keys"
+              )
+
+          print(f"\nAll {total} XMSS/XMSSMT keys are available in {KEY_DIR}.")
           print(f"\nFiles in {KEY_DIR}:")
           PY
           ls -lah "${KEY_DIR}"
@@ -84,4 +102,5 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ env.KEY_DIR }}
-          key: xmss-${{ runner.os }}-v${{ env.KEY_GEN_VERSION }}
+          key: xmss-v${{ env.KEY_GEN_VERSION }}
+          enableCrossOsArchive: true
