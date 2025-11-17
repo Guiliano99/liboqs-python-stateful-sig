@@ -16,7 +16,6 @@ def _mech_to_filename(name: str) -> str:
         "XMSSMT-SHA2_20/4_256" -> "xmssmt-sha2_20_layers_4_256.der"
         "XMSS-SHA2_10_256" -> "xmss-sha2_10_256.der"
     """
-
     return f"{name.replace('/', '_layers_', 1).lower()}.der"
 
 
