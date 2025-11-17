@@ -14,7 +14,7 @@ def _mech_to_filename(name: str) -> str:
 
     Example:
         "XMSSMT-SHA2_20/4_256" -> "xmssmt-sha2_20_layers_4_256.der"
-        "XMSS-SHA2_10_256" -> "xmss-sha2_10_layers_2_256.der"
+        "XMSS-SHA2_10_256" -> "xmss-sha2_10_256.der"
     """
 
     return f"{name.replace('/', '_layers_', 1).lower()}.der"
@@ -34,21 +34,17 @@ def _check_is_expensive(name: str) -> bool:
 
     Currently, we consider mechanisms with height > 16 as expensive.
     """
-
-    try:
-        if name.startswith("XMSS-"):
-            parts = name.split("-")[1].split("_")
-            height = int(parts[1])
-            output = int(parts[2])
-            return height > 16 or output == 512
-        elif name.startswith("XMSSMT-"):
-            parts = name.split("-")[1].split("_")
-            height = int(parts[1])
-        else:
-            return False
-
-        return height > 16
-    except (IndexError, ValueError):
+    if name.startswith("XMSS-"):
+        parts = name.split("-")[1].split("_")
+        height = int(parts[1])
+        output = int(parts[2])
+        return height > 16 or output == 512
+    elif name.startswith("XMSSMT-"):
+         parts = name.split("-")[1].split("_")
+         height = int(parts[1].split("/")[0])
+         layers =  int(parts[1].split("/")[1])
+         return (height == 40 and layers == 2) or (height == 60 and layers == 3)
+    else:
         return False
 
 def generate_keys(out_dir: Path) -> dict[str, Any]:
