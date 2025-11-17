@@ -46,12 +46,14 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
 
-      - name: Restore existing cache
-        id: cache-restore
+      - name: Restore XMSS/XMSSMT key cache
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.KEY_DIR }}
-          key: xmss-v${{ env.KEY_GEN_VERSION }}
+          key: xmss-v${{ env.KEY_GEN_VERSION }}-complete
+          restore-keys: |
+            xmss-v${{ env.KEY_GEN_VERSION }}-progress-
+            xmss-v${{ env.KEY_GEN_VERSION }}-
           enableCrossOsArchive: true
 
       - name: Install liboqs POSIX

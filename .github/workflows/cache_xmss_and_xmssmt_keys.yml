@@ -18,33 +18,83 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.9"
 
       - name: Install dependencies
         run: pip install .[dev]
 
-      - name: Restore existing cache (optional)
+      - name: Get current date for cache key
+        id: date
+        run: echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      - name: Restore XMSS/XMSSMT key cache
         id: cache-restore
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.KEY_DIR }}
-          key: xmss-v${{ env.KEY_GEN_VERSION }}
+          key: xmss-v${{ env.KEY_GEN_VERSION }}-complete
+          restore-keys: |
+            xmss-v${{ env.KEY_GEN_VERSION }}-progress-
+            xmss-v${{ env.KEY_GEN_VERSION }}-
+          enableCrossOsArchive: true
 
       - name: Show tree of cache directory
         run: |
           echo "Listing cache directory:"
+          mkdir -p data/xmss_xmssmt_keys
           ls -R data/xmss_xmssmt_keys
 
       - name: Generate keys when missing
+        id: generate
         run: |
           mkdir -p "${KEY_DIR}"
           python scripts/pipeline_gen_stfl_keys.py "${KEY_DIR}"
           ls -lah "${KEY_DIR}"
+          
+          # Count generated keys
+          KEY_COUNT=$(find "${KEY_DIR}" -type f -name "*.der" | wc -l)
+          echo "key_count=${KEY_COUNT}" >> $GITHUB_OUTPUT
+          echo "Generated/found ${KEY_COUNT} keys"
 
-      - name: Save cache (even on timeout/cancellation)
-        if: always()
+      - name: Check if all keys are generated
+        id: check-complete
+        run: |
+          # Use the Python function to check if all expensive keys are generated
+          python -c "
+          from pathlib import Path
+          from scripts.pipeline_gen_stfl_keys import check_generated_all_keys
+          import sys
+          
+          out_dir = Path('${KEY_DIR}')
+          if check_generated_all_keys(out_dir):
+              print('All keys generated!')
+              print('complete=true')
+              sys.exit(0)
+          else:
+              print('Still missing some keys')
+              print('complete=false')
+              sys.exit(0)
+          " | tee /tmp/check_output.txt
+          
+          # Extract the complete status from output
+          if grep -q "complete=true" /tmp/check_output.txt; then
+            echo "complete=true" >> $GITHUB_OUTPUT
+          else
+            echo "complete=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Save progress cache
+        if: always() && steps.check-complete.outputs.complete != 'true'
         uses: actions/cache/save@v4
         with:
           path: ${{ env.KEY_DIR }}
-          key: xmss-v${{ env.KEY_GEN_VERSION }}
+          key: xmss-v${{ env.KEY_GEN_VERSION }}-progress-${{ steps.date.outputs.date }}-${{ github.run_number }}
+          enableCrossOsArchive: true
+
+      - name: Save complete cache
+        if: steps.check-complete.outputs.complete == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.KEY_DIR }}
+          key: xmss-v${{ env.KEY_GEN_VERSION }}-complete
           enableCrossOsArchive: true
