@@ -201,6 +201,7 @@ def _install_liboqs(
                 # Stateful signature algorithms:
                 "-DOQS_ENABLE_SIG_STFL_LMS=ON",  # LMS family
                 "-DOQS_ENABLE_SIG_STFL_XMSS=ON",  # XMSS family
+                "-DOQS_ENABLE_SIG_CROSS=OFF",  # XMSS-MT family
                 # To support key-generation.
                 "-DOQS_HAZARDOUS_EXPERIMENTAL_ENABLE_SIG_STFL_KEY_SIG_GEN=ON",
                 f"-DCMAKE_INSTALL_PREFIX={target_directory}",
