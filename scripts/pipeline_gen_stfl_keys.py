@@ -14,6 +14,7 @@ def _mech_to_filename(name: str) -> str:
 
     Example:
         "XMSSMT-SHA2_20/4_256" -> "xmssmt-sha2_20_layers_4_256.der"
+        "XMSS-SHA2_10_256" -> "xmss-sha2_10_layers_2_256.der"
     """
 
     return f"{name.replace('/', '_layers_', 1).lower()}.der"
@@ -28,6 +29,27 @@ def _collect_mechanism_names() -> list[str]:
         if name.startswith(("XMSS-", "XMSSMT-"))
     ]
 
+def _check_is_expensive(name: str) -> bool:
+    """Check if the given XMSS/XMSSMT mechanism is considered expensive to generate.
+
+    Currently, we consider mechanisms with height > 16 as expensive.
+    """
+
+    try:
+        if name.startswith("XMSS-"):
+            parts = name.split("-")[1].split("_")
+            height = int(parts[1])
+            output = int(parts[2])
+            return height > 16 or output == 512
+        elif name.startswith("XMSSMT-"):
+            parts = name.split("-")[1].split("_")
+            height = int(parts[1])
+        else:
+            return False
+
+        return height > 16
+    except (IndexError, ValueError):
+        return False
 
 def generate_keys(out_dir: Path) -> dict[str, Any]:
     """Generate all XMSS/XMSSMT keys into *out_dir* if they are missing.
@@ -47,6 +69,10 @@ def generate_keys(out_dir: Path) -> dict[str, Any]:
     skipped = 0
 
     for name in all_keys:
+
+        if not _check_is_expensive(name):
+            print(f"✓ Skipping {name} (does not need to be pre-generated.)")
+
         key_filename = _mech_to_filename(name)
         key_path = out_dir / key_filename
 
