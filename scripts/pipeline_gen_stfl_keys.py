@@ -1,35 +1,55 @@
+"""
+XMSS/XMSSMT Stateful Signature Key Pre-Generation Script.
+
+This module provides functionality to pre-generate expensive XMSS and XMSSMT
+stateful signature keys for use in CI/CD pipelines and testing environments.
+
+Background
+----------
+XMSS (eXtended Merkle Signature Scheme) and XMSSMT (XMSS Multi-Tree) are
+post-quantum stateful signature schemes that can be computationally expensive
+to generate, especially for larger tree heights. Pre-generating these keys
+significantly reduces test execution time in CI pipelines.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
 import argparse
+import logging
 import os
 from typing import Any, Iterable
 
 import oqs
 import oqs.serialize
 
+logger = logging.getLogger(__name__)
+
 
 def _mech_to_filename(name: str) -> str:
-    """Map mechanism name to key filename (keep in sync with CI pipeline).
+    """
+    Map mechanism name to key filename (keep in sync with CI pipeline).
 
     Example:
         "XMSSMT-SHA2_20/4_256" -> "xmssmt-sha2_20_layers_4_256.der"
         "XMSS-SHA2_10_256" -> "xmss-sha2_10_256.der"
+
     """
     return f"{name.replace('/', '_layers_', 1).lower()}.der"
 
 
 def _collect_mechanism_names() -> list[str]:
     """Return all enabled XMSS/XMSSMT stateful signature mechanisms."""
-
     return [
         name
         for name in oqs.get_enabled_stateful_sig_mechanisms()
         if name.startswith(("XMSS-", "XMSSMT-"))
     ]
 
+
 def _check_is_expensive(name: str) -> bool:
-    """Check if the given XMSS/XMSSMT mechanism is considered expensive to generate.
+    """
+    Check if the given XMSS/XMSSMT mechanism is considered expensive to generate.
 
     Currently, we consider mechanisms with height > 16 as expensive.
     """
@@ -38,23 +58,22 @@ def _check_is_expensive(name: str) -> bool:
         height = int(parts[1])
         output = int(parts[2])
         return height > 16 or output == 512
-    elif name.startswith("XMSSMT-"):
-         parts = name.split("-")[1].split("_")
-         height = int(parts[1].split("/")[0])
-         layers =  int(parts[1].split("/")[1])
-         return (height == 40 and layers == 2) or (height == 60 and layers == 3)
-    else:
-        return False
+    if name.startswith("XMSSMT-"):
+        parts = name.split("-")[1].split("_")
+        height = int(parts[1].split("/")[0])
+        layers = int(parts[1].split("/")[1])
+        return (height == 40 and layers == 2) or (height == 60 and layers == 3)
+    return False
+
 
 def get_all_keys_to_generate() -> list[str]:
     """Get a list of all XMSS/XMSSMT keys that are considered expensive to generate."""
     all_keys: list[str] = _collect_mechanism_names()
-    expensive_keys = [name for name in all_keys if _check_is_expensive(name)]
-    return expensive_keys
+    return [name for name in all_keys if _check_is_expensive(name)]
+
 
 def check_generated_all_keys(out_dir: Path) -> bool:
     """Check if all XMSS/XMSSMT keys are present in *out_dir*."""
-
     all_keys: list[str] = get_all_keys_to_generate()
 
     for name in all_keys:
@@ -66,12 +85,12 @@ def check_generated_all_keys(out_dir: Path) -> bool:
 
 
 def generate_keys(out_dir: Path) -> dict[str, Any]:
-    """Generate all XMSS/XMSSMT keys into *out_dir* if they are missing.
+    """
+    Generate all XMSS/XMSSMT keys into *out_dir* if they are missing.
 
     Returns a small stats dict useful for tests:
         {"generated": int, "skipped": int, "total": int, "missing": list[str]}
     """
-
     out_dir.mkdir(parents=True, exist_ok=True)
 
     all_keys: list[str] = _collect_mechanism_names()
@@ -83,30 +102,28 @@ def generate_keys(out_dir: Path) -> dict[str, Any]:
     skipped = 0
 
     for name in all_keys:
-
         if not _check_is_expensive(name):
-            print(f"✓ Skipping {name} (does not need to be pre-generated.)")
+            logger.debug("Skipping %s (does not need to be pre-generated.)", name)
 
         key_filename = _mech_to_filename(name)
         key_path = out_dir / key_filename
 
         if key_path.exists():
-            print(f"✓ Skipping {name} (already exists)")
+            logger.debug("Skipping %s (already exists)", name)
             skipped += 1
             continue
 
-        print(f"⚙ Generating {name}...")
+        logger.debug("Generating %s...", name)
         with oqs.StatefulSignature(name) as sig:
             pub = sig.generate_keypair()
             oqs.serialize.serialize_stateful_signature_key(sig, pub, key_path)
-        print(f"✓ Generated {name}")
+        logger.debug("Generated %s", name)
         generated += 1
 
-    print("\n=== Summary ===")
-    print(f"Generated: {generated}")
-    print(f"Skipped: {skipped}")
     total = len(all_keys)
-    print(f"Total: {total}")
+    logger.debug(
+        "\n=== Summary ===\nGenerated: %d\nSkipped: %d\nTotal: %d", generated, skipped, total
+    )
 
     missing: list[str] = []
     for name in all_keys:
@@ -116,12 +133,12 @@ def generate_keys(out_dir: Path) -> dict[str, Any]:
             missing.append(name)
 
     if missing:
-        print("\nERROR: The following keys could not be generated:")
+        logger.debug("\nERROR: The following keys could not be generated:")
         for name in missing:
-            print(f" - {name}")
+            logger.debug(" - %s", name)
 
-    print(f"\nAll {total} XMSS/XMSSMT keys are available in {out_dir}.")
-    print(f"\nFiles in {out_dir}:")
+    logger.debug("\nAll %d XMSS/XMSSMT keys are available in %s.", total, out_dir)
+    logger.debug("\nFiles in %s:", out_dir)
 
     return {
         "generated": generated,
@@ -133,14 +150,14 @@ def generate_keys(out_dir: Path) -> dict[str, Any]:
 
 
 def _resolve_out_dir(cli_dir: str | None) -> Path:
-    """Resolve the output directory from CLI argument or KEY_DIR env.
+    """
+    Resolve the output directory from CLI argument or KEY_DIR env.
 
     Precedence:
       1. Explicit CLI argument (if provided).
       2. $KEY_DIR environment variable (if set).
       3. Default "data/xmss_xmssmt_keys" relative to repo root.
     """
-
     if cli_dir:
         return Path(cli_dir)
 
@@ -179,4 +196,3 @@ def main(argv: Iterable[str] | None = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover - thin CLI wrapper
     main()
-
