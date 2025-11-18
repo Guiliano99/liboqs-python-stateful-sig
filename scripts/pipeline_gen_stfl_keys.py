@@ -26,6 +26,41 @@ import oqs.serialize
 logger = logging.getLogger(__name__)
 
 
+# Configure logging from CLI arg or environment variables when invoked as script
+# Supported env vars (in precedence order): KEYGEN_LOG_LEVEL, LOG_LEVEL, PYTHONLOGLEVEL
+_SUPPORTED_LOG_LEVEL_ENVS = ("KEYGEN_LOG_LEVEL", "LOG_LEVEL", "PYTHONLOGLEVEL")
+
+
+def _parse_log_level(name: str | None) -> int:
+    if not name:
+        return logging.INFO
+    try:
+        return getattr(logging, name.upper())
+    except AttributeError:
+        return logging.INFO
+
+
+def _configure_logging(cli_level: str | None = None) -> None:
+    # Determine level from CLI or environment
+    level_name = cli_level
+    if level_name is None:
+        for env in _SUPPORTED_LOG_LEVEL_ENVS:
+            val = os.environ.get(env)
+            if val:
+                level_name = val
+                break
+    level = _parse_log_level(level_name)
+
+    # Ensure basic configuration even if another library configured logging
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
+        force=True,  # Python >=3.8; overwrite existing handlers to ensure our settings apply
+    )
+    logger.debug("Logging configured at %s", logging.getLevelName(level))
+
+
 def _mech_to_filename(name: str) -> str:
     """
     Map mechanism name to key filename (keep in sync with CI pipeline).
@@ -180,7 +215,21 @@ def main(argv: Iterable[str] | None = None) -> int:
             "Defaults to $KEY_DIR if set, otherwise data/xmss_xmssmt_keys."
         ),
     )
+    # Optional logging level control
+    parser.add_argument(
+        "-l",
+        "--log-level",
+        dest="log_level",
+        choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"],
+        help=(
+            "Logging level. If omitted, will use KEYGEN_LOG_LEVEL/LOG_LEVEL/PYTHONLOGLEVEL env vars,"
+            " defaulting to INFO."
+        ),
+    )
     args = parser.parse_args(list(argv) if argv is not None else None)
+
+    # Configure logging before doing work
+    _configure_logging(args.log_level)
 
     out_dir = _resolve_out_dir(args.key_dir)
     stats = generate_keys(out_dir)
