@@ -13,7 +13,6 @@ env:
 jobs:
   build-cache:
     runs-on: ubuntu-latest
-    timeout-minutes: 480 # 8 hours
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
