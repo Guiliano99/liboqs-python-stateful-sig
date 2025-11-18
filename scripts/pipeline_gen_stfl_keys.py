@@ -25,7 +25,7 @@ import oqs
 import oqs.serialize
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(stdout))
 
 
