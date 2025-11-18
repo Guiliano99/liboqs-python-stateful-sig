@@ -139,6 +139,7 @@ def generate_keys(out_dir: Path) -> dict[str, Any]:
     for name in all_keys:
         if not _check_is_expensive(name):
             logger.debug("Skipping %s (does not need to be pre-generated.)", name)
+            continue
 
         key_filename = _mech_to_filename(name)
         key_path = out_dir / key_filename
