@@ -49,9 +49,13 @@ jobs:
 
       - name: Generate keys when missing
         id: generate
+        env:
+          KEYGEN_LOG_LEVEL: DEBUG   # Ensure our Python script logs debug statements
+          PYTHONUNBUFFERED: "1"     # Flush stdout/stderr immediately for real-time logs
         run: |
+          set -x
           mkdir -p "${KEY_DIR}"
-          python scripts/pipeline_gen_stfl_keys.py "${KEY_DIR}"
+          python -u scripts/pipeline_gen_stfl_keys.py --log-level DEBUG "${KEY_DIR}"
           ls -lah "${KEY_DIR}"
           
           # Count generated keys
