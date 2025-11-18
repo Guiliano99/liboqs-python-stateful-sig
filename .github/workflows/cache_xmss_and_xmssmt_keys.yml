@@ -7,7 +7,7 @@ on:
   repository_dispatch: {}
 
 env:
-  KEY_GEN_VERSION: 1
+  KEY_GEN_VERSION: 0
   KEY_DIR: data/xmss_xmssmt_keys
 
 concurrency:
