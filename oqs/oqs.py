@@ -111,9 +111,7 @@ def _load_shared_obj(
             elif platform.system() == "Windows":
                 # Try both oqs.dll and liboqs.dll in the install path
                 for dll_name in (name, f"lib{name}"):
-                    paths.append(
-                        path.absolute() / Path(dll_name).with_suffix(".dll")
-                    )
+                    paths.append(path.absolute() / Path(dll_name).with_suffix(".dll"))
             else:  # Linux/FreeBSD/UNIX
                 paths.append(path.absolute() / Path(f"lib{name}").with_suffix(".so"))
                 # https://stackoverflow.com/questions/856116/changing-ld-library-path-at-runtime-for-ctypes
