@@ -55,7 +55,7 @@ jobs:
         run: |
           set -x
           mkdir -p "${KEY_DIR}"
-          python -u scripts/pipeline_gen_stfl_keys.py --log-level DEBUG "${KEY_DIR}"
+          python -u scripts/pipeline_gen_stfl_keys.py "${KEY_DIR}"
           ls -lah "${KEY_DIR}"
           
           # Count generated keys
