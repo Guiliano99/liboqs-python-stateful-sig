@@ -56,6 +56,12 @@ jobs:
             xmss-v${{ env.KEY_GEN_VERSION }}-
           enableCrossOsArchive: true
 
+      - name: Show tree of cache directory
+        run: |
+          echo "Listing cache directory:"
+          mkdir -p data/xmss_xmssmt_keys
+          ls -R data/xmss_xmssmt_keys
+
       - name: Install liboqs POSIX
         if: matrix.os != 'windows-latest'
         run: |
