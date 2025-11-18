@@ -46,15 +46,18 @@ def _check_is_expensive(name: str) -> bool:
     else:
         return False
 
+def get_all_keys_to_generate() -> list[str]:
+    """Get a list of all XMSS/XMSSMT keys that are considered expensive to generate."""
+    all_keys: list[str] = _collect_mechanism_names()
+    expensive_keys = [name for name in all_keys if _check_is_expensive(name)]
+    return expensive_keys
+
 def check_generated_all_keys(out_dir: Path) -> bool:
     """Check if all XMSS/XMSSMT keys are present in *out_dir*."""
 
-    all_keys: list[str] = _collect_mechanism_names()
+    all_keys: list[str] = get_all_keys_to_generate()
 
     for name in all_keys:
-        if not _check_is_expensive(name):
-            continue
-
         key_filename = _mech_to_filename(name)
         key_path = out_dir / key_filename
         if not key_path.exists():
