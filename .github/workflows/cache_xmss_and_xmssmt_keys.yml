@@ -10,6 +10,10 @@ env:
   KEY_GEN_VERSION: 1
   KEY_DIR: data/xmss_xmssmt_keys
 
+concurrency:
+  group: gen-cache-stfl-keys-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build-cache:
     runs-on: ubuntu-latest
