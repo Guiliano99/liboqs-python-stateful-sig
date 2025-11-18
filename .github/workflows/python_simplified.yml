@@ -52,7 +52,6 @@ jobs:
       - name: Show tree of cache directory
         run: |
           echo "Listing cache directory:"
-          mkdir -p data/xmss_xmssmt_keys
           ls -R data/xmss_xmssmt_keys
 
       - name: Run examples
