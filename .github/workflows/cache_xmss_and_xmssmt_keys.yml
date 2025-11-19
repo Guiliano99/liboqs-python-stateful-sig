@@ -66,25 +66,8 @@ jobs:
       - name: Check if all keys are generated
         id: check-complete
         run: |
-          # Use the Python function to check if all expensive keys are generated
-          python -c "
-          from pathlib import Path
-          from scripts.pipeline_gen_stfl_keys import check_generated_all_keys
-          import sys
-          
-          out_dir = Path('${KEY_DIR}')
-          if check_generated_all_keys(out_dir):
-              print('All keys generated!')
-              print('complete=true')
-              sys.exit(0)
-          else:
-              print('Still missing some keys')
-              print('complete=false')
-              sys.exit(0)
-          " | tee /tmp/check_output.txt
-          
-          # Extract the complete status from output
-          if grep -q "complete=true" /tmp/check_output.txt; then
+          # Use the --check_keys_dir flag to verify all keys are present
+          if python scripts/pipeline_gen_stfl_keys.py "${KEY_DIR}" --check_keys_dir; then
             echo "complete=true" >> $GITHUB_OUTPUT
           else
             echo "complete=false" >> $GITHUB_OUTPUT

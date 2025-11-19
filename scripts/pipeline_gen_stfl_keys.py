@@ -184,19 +184,32 @@ def main(argv: Iterable[str] | None = None) -> int:
             "Defaults to $KEY_DIR if set, otherwise data/xmss_xmssmt_keys."
         ),
     )
+    parser.add_argument(
+        "--check_keys_dir",
+        action="store_true",
+        help=(
+            "If set, do not generate keys; only check whether all required "
+            "XMSS/XMSSMT keys exist in the output directory. Returns 0 if all "
+            "keys are present, 1 if any are missing."
+        ),
+    )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     out_dir = _resolve_out_dir(args.key_dir)
-    stats = generate_keys(out_dir)
 
-    # For now we always return 0 to keep behavior similar to the inline script,
-    # which only printed errors but did not cause the job to fail.
-    if stats["missing"]:
-        # If you later want to fail the pipeline, change this to return 1.
-        pass
+    if args.check_keys_dir:
+        # Only check whether all required keys are present; do not generate.
+        all_present = check_generated_all_keys(out_dir)
+        if all_present:
+            logger.debug("All required XMSS/XMSSMT keys are present in %s", out_dir)
+            return 0
+        else:
+            logger.debug("Some required XMSS/XMSSMT keys are missing in %s", out_dir)
+            return 1
 
+    _ = generate_keys(out_dir)
     return 0
 
 
-if __name__ == "__main__":  # pragma: no cover - thin CLI wrapper
+if __name__ == "__main__":
     main()
