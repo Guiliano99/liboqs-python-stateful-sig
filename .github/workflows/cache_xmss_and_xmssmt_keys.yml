@@ -53,14 +53,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # Set up Python 3.9 environment, but could be changed as needed.
-      - uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.9"
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
+
+      - name: Set up Python 3.9
+        run: uv python install 3.9
 
       - name: Install dependencies
-        run: pip install .[dev]
+        run: uv sync --extra dev
 
       # Generate today's date for use in progress cache keys
       # This ensures we get a new cache entry each day for incremental progress
@@ -97,13 +101,15 @@ jobs:
       # This is used, to safe the keys across multiple runs.
       - name: Generate keys when missing
         id: generate
+        env:
+          PYTHONUNBUFFERED: "1"  # Enable unbuffered output for real-time logs
         run: |
           set -x  # Enable command echoing for transparency
           mkdir -p "${KEY_DIR}"
           
-          # Run the key generation script with -u flag for unbuffered output (real-time logs)
+          # Run the key generation script
           # It will skip keys that already exist and only generate missing ones
-          python -u scripts/pipeline_gen_stfl_keys.py "${KEY_DIR}"
+          uv run scripts/pipeline_gen_stfl_keys.py "${KEY_DIR}"
           
           # Show what keys we have now
           ls -lah "${KEY_DIR}"
@@ -121,7 +127,7 @@ jobs:
         id: check-complete
         run: |
           # Use the --check_keys_dir flag to verify all keys are present
-          if python scripts/pipeline_gen_stfl_keys.py "${KEY_DIR}" --check_keys_dir; then
+          if uv run scripts/pipeline_gen_stfl_keys.py "${KEY_DIR}" --check_keys_dir; then
             echo "complete=true" >> $GITHUB_OUTPUT
           else
             echo "complete=false" >> $GITHUB_OUTPUT
