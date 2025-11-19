@@ -16,7 +16,7 @@ env:
   LD_LIBRARY_PATH: /usr/local/lib
   WIN_LIBOQS_INSTALL_PATH: C:\liboqs
   VERSION: 0.14.0
-  KEY_GEN_VERSION: 1
+  KEY_GEN_VERSION: 0
   KEY_DIR: data/xmss_xmssmt_keys
 
 concurrency:
