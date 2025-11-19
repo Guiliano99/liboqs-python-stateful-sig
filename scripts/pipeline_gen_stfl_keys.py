@@ -1,12 +1,12 @@
 """
-XMSS/XMSSMT Stateful Signature Key Pre-Generation Script.
+XMSS/XMSS^MT Stateful Signature Key Pre-Generation Script.
 
-This module provides functionality to pre-generate expensive XMSS and XMSSMT
+This module provides functionality to pre-generate expensive XMSS and XMSS^MT
 stateful signature keys for use in CI/CD pipelines and testing environments.
 
 Background
 ----------
-XMSS (eXtended Merkle Signature Scheme) and XMSSMT (XMSS Multi-Tree) are
+XMSS (eXtended Merkle Signature Scheme) and XMSS^MT (XMSS Multi-Tree) are
 post-quantum stateful signature schemes that can be computationally expensive
 to generate, especially for larger tree heights. Pre-generating these keys
 significantly reduces test execution time in CI pipelines.
@@ -34,7 +34,7 @@ def _mech_to_filename(name: str) -> str:
     Map mechanism name to key filename (keep in sync with CI pipeline).
 
     Example:
-        "XMSSMT-SHA2_20/4_256" -> "xmssmt-sha2_20_layers_4_256.der"
+        "XMSS^MT-SHA2_20/4_256" -> "xmssmt-sha2_20_layers_4_256.der"
         "XMSS-SHA2_10_256" -> "xmss-sha2_10_256.der"
 
     """
@@ -42,7 +42,7 @@ def _mech_to_filename(name: str) -> str:
 
 
 def _collect_mechanism_names() -> list[str]:
-    """Return all enabled XMSS/XMSSMT stateful signature mechanisms."""
+    """Return all enabled XMSS/XMSS^MT stateful signature mechanisms."""
     return [
         name
         for name in oqs.get_enabled_stateful_sig_mechanisms()
@@ -52,7 +52,7 @@ def _collect_mechanism_names() -> list[str]:
 
 def _check_is_expensive(name: str) -> bool:
     """
-    Check if the given XMSS/XMSSMT mechanism is considered expensive to generate.
+    Check if the given XMSS/XMSS^MT mechanism is considered expensive to generate.
 
     Currently, we consider mechanisms with height > 16 as expensive.
     """
@@ -70,13 +70,13 @@ def _check_is_expensive(name: str) -> bool:
 
 
 def get_all_keys_to_generate() -> list[str]:
-    """Get a list of all XMSS/XMSSMT keys that are considered expensive to generate."""
+    """Get a list of all XMSS/XMSS^MT keys that are considered expensive to generate."""
     all_keys: list[str] = _collect_mechanism_names()
     return [name for name in all_keys if _check_is_expensive(name)]
 
 
 def check_generated_all_keys(out_dir: Path) -> bool:
-    """Check if all XMSS/XMSSMT keys are present in *out_dir*."""
+    """Check if all XMSS/XMSS^MT keys are present in *out_dir*."""
     all_keys: list[str] = get_all_keys_to_generate()
 
     for name in all_keys:
@@ -89,7 +89,7 @@ def check_generated_all_keys(out_dir: Path) -> bool:
 
 def generate_keys(out_dir: Path) -> dict[str, Any]:
     """
-    Generate all XMSS/XMSSMT keys into *out_dir* if they are missing.
+    Generate all XMSS/XMSS^MT keys into *out_dir* if they are missing.
 
     Returns a small stats dict useful for tests:
         {"generated": int, "skipped": int, "total": int, "missing": list[str]}
@@ -141,7 +141,7 @@ def generate_keys(out_dir: Path) -> dict[str, Any]:
         for name in missing:
             logger.debug(" - %s", name)
 
-    logger.debug("\nAll %d XMSS/XMSSMT keys are available in %s.", total, out_dir)
+    logger.debug("\nAll %d XMSS/XMSS^MT keys are available in %s.", total, out_dir)
     logger.debug("\nFiles in %s:", out_dir)
 
     return {
@@ -174,7 +174,7 @@ def _resolve_out_dir(cli_dir: str | None) -> Path:
 
 def main(argv: Iterable[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Generate XMSS/XMSSMT stateful signature keys.",
+        description="Generate XMSS/XMSS^MT stateful signature keys.",
     )
     parser.add_argument(
         "key_dir",
@@ -189,7 +189,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         action="store_true",
         help=(
             "If set, do not generate keys; only check whether all required "
-            "XMSS/XMSSMT keys exist in the output directory. Returns 0 if all "
+            "XMSS/XMSS^MT keys exist in the output directory. Returns 0 if all "
             "keys are present, 1 if any are missing."
         ),
     )
@@ -201,10 +201,10 @@ def main(argv: Iterable[str] | None = None) -> int:
         # Only check whether all required keys are present; do not generate.
         all_present = check_generated_all_keys(out_dir)
         if all_present:
-            logger.debug("All required XMSS/XMSSMT keys are present in %s", out_dir)
+            logger.debug("All required XMSS/XMSS^MT keys are present in %s", out_dir)
             return 0
         else:
-            logger.debug("Some required XMSS/XMSSMT keys are missing in %s", out_dir)
+            logger.debug("Some required XMSS/XMSS^MT keys are missing in %s", out_dir)
             return 1
 
     _ = generate_keys(out_dir)
