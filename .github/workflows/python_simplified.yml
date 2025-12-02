@@ -16,6 +16,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
+  PYOQS_ENABLE_FAULTHANDLER: "1"
   KEY_GEN_VERSION: 0
   KEY_DIR: data/xmss_xmssmt_keys
 
