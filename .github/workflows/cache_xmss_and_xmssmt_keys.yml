@@ -16,7 +16,7 @@
 #
 # The workflow will:
 # 1. Try to restore a complete cache first.
-# 2. Fall back to the latest progress cache if complete cache doesn't exist.
+# 2. Fall back to the latest progress cache if the complete cache doesn't exist.
 # 3. Generate any missing keys.
 # 4. Save either a new progress cache or complete cache depending on status.
 #
