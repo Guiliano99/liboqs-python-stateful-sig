@@ -61,6 +61,7 @@ if os.environ.get("PYOQS_ENABLE_FAULTHANDLER", "0") == "1":
 else:
     logger.info("liboqs-python faulthandler is disabled")
 
+
 # Expected return value from native OQS functions
 OQS_SUCCESS: Final[int] = 0
 OQS_ERROR: Final[int] = -1
