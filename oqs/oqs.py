@@ -74,7 +74,7 @@ def oqs_python_version() -> Union[str, None]:
     if OQS_ENV_VERSION is not None:
         if OQS_ENV_VERSION == "latest":
             return None
-        return int(OQS_ENV_VERSION)
+        return OQS_ENV_VERSION
 
     try:
         result = importlib.metadata.version("liboqs-python")
